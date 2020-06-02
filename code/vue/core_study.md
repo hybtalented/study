@@ -152,7 +152,7 @@ export function defineReactive(
 
 ### 调度中心
 
-Vue 中没有严格意义上的调度中心,但是可以将每一个`Dep`类视为一个调度规则，从而将所有的`Dep`整体视为一个调度中心。另一方面，由于`Dep`和发布者是一一对应的，可以将发布者和`Dep`整体视为观察者模式的主题，区别是观察者可以同时观察多个主题。`Dep`的代码如下：
+Vue 中没有严格意义上的调度中心,但是可以将每一个`Dep`类视为一个调度规则，从而将所有的`Dep`整体视为一个调度中心。另一方面，由于`Dep`和发布者是一一对应的，可以将发布者和`Dep`整体视为观察者模式的主题，区别是观察者可以同时观察多个主题（发布者）。`Dep`的代码如下：
 
 ```typescript
 export default class Dep {
@@ -175,7 +175,7 @@ export default class Dep {
 
   depend() {
     if (Dep.target) {
-      Dep.target.addDep(this); // 将观察者添加到当前依赖中
+      Dep.target.addDep(this); // 将观察者添加到当前依赖中，其中做了防止重复添加依赖的判断
     }
   }
 
@@ -195,8 +195,7 @@ export default class Dep {
   }
 }
 ```
-
-可以看到`depend`方法就是将当前订阅者(`Dep.target`)添加到依赖的订阅者队列里。
+Dep的`depend`方法实际上就是将当前订阅者(`Dep.target`)添加到依赖的订阅者队列里。
 
 ### 订阅者
 
@@ -221,55 +220,12 @@ export default class Watcher {
   value: any;
 
   constructor(
-    vm: Component,
-    expOrFn: string | Function,
-    cb: Function,
-    options?: ?Object,
-    isRenderWatcher?: boolean
-  ) {
-    this.vm = vm;
-    if (isRenderWatcher) {
-      vm._watcher = this;
-    }
-    vm._watchers.push(this);
-    // options
-    if (options) {
-      this.deep = !!options.deep; // 是否深度依赖，如果为true当对象的子对象或属性值改变是都会通知依赖更新。
-      this.user = !!options.user; // 是否用户的watcher
-      this.lazy = !!options.lazy; // 懒加载
-      this.sync = !!options.sync; // 是否同步
-      this.before = options.before; // getter更新前回调
-    } else {
-      this.deep = this.user = this.lazy = this.sync = false;
-    }
-    this.cb = cb;
-    this.id = ++uid; // uid for batching
-    this.active = true;
-    this.dirty = this.lazy; // for lazy watchers
-    this.deps = [];
-    this.newDeps = [];
-    this.depIds = new Set();
-    this.newDepIds = new Set();
-    this.expression =
-      process.env.NODE_ENV !== "production" ? expOrFn.toString() : "";
-    // parse expression for getter
-    if (typeof expOrFn === "function") {
-      this.getter = expOrFn;
-    } else {
-      this.getter = parsePath(expOrFn);
-      if (!this.getter) {
-        this.getter = noop;
-        process.env.NODE_ENV !== "production" &&
-          warn(
-            `Failed watching path: "${expOrFn}" ` +
-              "Watcher only accepts simple dot-delimited paths. " +
-              "For full control, use a function instead.",
-            vm
-          );
-      }
-    }
-    this.value = this.lazy ? undefined : this.get();
-  }
+    vm: Component, // vm
+    expOrFn: string | Function, // 监视的函数或者表达式
+    cb: Function, // 更新回调
+    options?: ?Object, // 监视选项
+    isRenderWatcher?: boolean // 是否是渲染函数的Wacher
+  );
 
   /**
    * Evaluate +he getter, and re-collect dependencies.
@@ -371,12 +327,7 @@ export default class Watcher {
   /**
    * Depend on all deps collected by this watcher.
    */
-  depend() {
-    let i = this.deps.length;
-    while (i--) {
-      this.deps[i].depend();
-    }
-  }
+  depend(); // 重新添加当前Watcher的所有依赖到其他Watcher上
 
   /**
    * Remove self from all dependencies' subscriber list.

@@ -17,4 +17,4 @@
 --------------------------------------------------------------
 ## tool - 工具使用
 ###  OllyDbg -反汇编工具
-  主要用于exe、dll、ocx的反汇编[破解](./tool/OllyDbg/index.md)
+  主要用于window平台的反汇编[破解](./tool/OllyDbg/index.md)
