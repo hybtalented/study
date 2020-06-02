@@ -5,7 +5,7 @@
 
 -------------------------------------------------------------
 # design_pattern - 设计模式
-  主要包括[观察者模式](./design_pattern/observer_pattern.md)、[发布订阅模式](design_pattern\pubilsh_subscribe.md)、[生产者/消费者模式](./design_pattern/production_consumer.md)
+  主要包括[观察者模式](./design_pattern/observer_pattern.md)、[发布订阅模式](design_pattern\publish_subscribe.md)、[生产者/消费者模式](./design_pattern/production_consumer.md)
   
 --------------------------------------------------------------
 ## code - 代码学习

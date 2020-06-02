@@ -8,11 +8,22 @@
 - 调度阶段：`主题`发生改变时，通知`调度中心`，然后`调度中心`将主题分发到所有订阅对应主题的`观察者`
 
 ```mermaid
-graph LR
-   sub1(发布者-主题1) -- 主题更新通知 --> broker(调度中心)  -- 通知订阅对应主题的观察者--> ob1(订阅者-观察者1) -- 订阅主题 --> broker
-   sub2(发布者-主题2) -- 主题更新通知 --> broker(调度中心)
-   broker  -- 通知订阅对应主题的观察者--> ob2(订阅者-观察者2)
-   ob2 -- 订阅主题 --> broker
+flowchart TD
+  subgraph 发布者
+    sub1(主题1)
+    sub2(主题2) 
+  end
+  subgraph 订阅者
+    ob1(观察者1)
+    ob2(观察者2)
+  end
+  subgraph 调度中心
+  end
+   sub1 -- 主题更新通知 --> 调度中心
+   ob1 -- 订阅主题 --> 调度中心
+   sub2 -- 主题更新通知 --> 调度中心
+   ob2 -- 订阅主题 --> 调度中心
+   调度中心  -- 通知订阅的观察者--> 订阅者
 ```
 
 ## 示例
@@ -30,7 +41,7 @@ class Publisher {
   constructor(broker: Broker) {
     this.broker = broker;
   }
-  notify() {
+  publish() {
     this.broker.update(this.component, this.version, this.url);
   }
 }
@@ -51,7 +62,7 @@ class Broker {
       this.subscribers.delete(subscriber);
     }
   }
-  notifyAll(component: string, version: number, url: string) {
+  update(component: string, version: number, url: string) {
     this.subscribers
       .filter((subscriber) => {
         // 订阅更新的订阅者
