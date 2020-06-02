@@ -4,7 +4,7 @@
 
 ## 介绍
 
-vue 的数据的双向绑定是通过[发布订阅模式](../design_pattern/publish_subscribe.md)和数据劫持实现的，其主要实现代码在`/src/core/observer`目录下的`observer.js`(发布者 或 主题)、`dep.js`(基于依赖的调度中心)、`watcher.js`(订阅者 或 观察者)， 此外，`array.js`主要实现了被观察的数组的相关方法的劫持、`scheduler.js`用于异步 Watcher 的调度;
+vue 的数据的双向绑定是通过[发布订阅模式](../../design_pattern/publish_subscribe.md)和数据劫持实现的，其主要实现代码在`/src/core/observer`目录下的`observer.js`(发布者 或 主题)、`dep.js`(基于依赖的调度中心)、`watcher.js`(订阅者 或 观察者)， 此外，`array.js`主要实现了被观察的数组的相关方法的劫持、`scheduler.js`用于异步 Watcher 的调度;
 
 ## 设计思路
 
@@ -31,7 +31,7 @@ flowchart LR
 
 ### 发布者
 
-Vue 有两种类型的发布者，每一个发布者与依赖(`Dep`)是一一对应的，通过`Dep`通知订阅者依赖发生了改变。
+Vue 有两种类型的发布者，每一个发布者与依赖(`Dep`)是一一对应的，通过`Dep`通知订阅者依赖发生了改变。两类之间观察者存在递归关系，当时通过`__ob__`属性可以防止一个对象多次绑定观察者。
 
 - 第一种发布者
 
@@ -148,11 +148,11 @@ export function defineReactive(
 }
 ```
 
-第二种发布者通过属性劫持实现，在 get 方法中添加依赖，在 set 方法中通知依赖更新。
+第二种发布者通过属性劫持实现，在 get 方法中添加依赖，在 set 方法中通知依赖更新。触发第二类观察者更新可以通过`$set`, `$del`添加删除属性实现。
 
 ### 调度中心
 
-Vue 中没有严格意义上的调度中心,但是可以将每一个`Dep`类视为一个调度规则，从而将所有的`Dep`整体视为一个调度中心。另一方面，由于`Dep`和发布者是一一对应的，可以将发布者和`Dep`整体视为观察者模式的主题，区别是观察者可以同时观察多个主题（发布者）。`Dep`的代码如下：
+Vue 中没有严格意义上的调度中心,但是可以将每一个`Dep`类视为一个调度规则，从而将所有的`Dep`整体视为一个调度中心。另一方面，由于`Dep`和发布者是一一对应的，可以将发布者和`Dep`整体视为[观察者模式](../../design_pattern/observer_pattern.md)的主题，区别是观察者可以同时观察多个主题（发布者）。`Dep`的代码如下：
 
 ```typescript
 export default class Dep {
@@ -336,6 +336,50 @@ export default class Watcher {
 }
 ```
 每一个订阅者通过`evaluate`方法重新计算值，`get`方法重新计算依赖。在依赖更新以后调用`update`方法。
+
+## Array优化
+Vue会给每一个被观察的对象及其子对象的添加一个`Observer`观察者，如果被观察的对象的数据量非常大的话，会造成大量的内存消耗，在渲染图表时，大数据量的需求是比较常见的。事实上vue对`Array`的监视也进行了优化，并没有对`Array`的所有属性进行劫持，而只是劫持来了被监视的`Array` 的`push`,`pop`,`shift`, `unshift`,`splice`, `sort`， `reverse`几个方法, 在用Vue对大数据量时，尽量使用Array进行渲染。
+
+除此之外，如果`Array`的元素是对象的话，也会对`Array`的每一个元素创建观察者，但是如果`Array`的元素只是简单的数据类型，则可以避免这种情况。所以，如果`Array`的元素是对象的话，需要把这个对象分解成多个简单数据类型的`Array`。
+
+
+``` typescript
+const methodsToPatch = [
+  'push',
+  'pop',
+  'shift',
+  'unshift',
+  'splice',
+  'sort',
+  'reverse'
+]
+
+/**
+ * Intercept mutating methods and emit events
+ */
+methodsToPatch.forEach(function (method) {
+  // cache original method
+  const original = arrayProto[method]
+  def(arrayMethods, method, function mutator (...args) {
+    const result = original.apply(this, args)
+    const ob = this.__ob__
+    let inserted
+    switch (method) {
+      case 'push':
+      case 'unshift':
+        inserted = args 
+        break
+      case 'splice':
+        inserted = args.slice(2)
+        break
+    }
+    if (inserted) ob.observeArray(inserted) // 如果有新增的元素，则对其子元素一并进行监视
+    // notify change
+    ob.dep.notify()
+    return result
+  })
+})
+```
 <style>
 .mume .node,.label {
     font-size: 13px;
