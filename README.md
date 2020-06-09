@@ -11,10 +11,15 @@
 ## code - 代码学习
 
 ### vue
-  vue相关模块[双向绑定](./code/vue/core_study.md)的代码学习
+  vue相关模块[双向绑定](./code/vue/core_study.md), [服务端渲染](./code/vue.core_study.md)的代码学习。
 
 
 --------------------------------------------------------------
 ## tool - 工具使用
 ###  OllyDbg -反汇编工具
   主要用于window平台的反汇编[破解](./tool/OllyDbg/index.md)
+
+## algorithm - 算法
+### application - 应用
+* [验证码识别算法](./algorithm/application/verification_code_recognize.md)
+### basic_theory - 基本理论
