@@ -36,7 +36,7 @@ Vue 有两种类型的发布者，每一个发布者与依赖(`Dep`)是一一对
 - 第一种发布者
 
 ```typescript
-export class Observer {
+export class Observer 
   value: any; //
   dep: Dep;
   vmCount: number; // number of vms that have this object as root $data
