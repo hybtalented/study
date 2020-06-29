@@ -335,7 +335,7 @@ export default class Watcher {
   teardown(); // 从依赖中移除当前Watcher
 }
 ```
-每一个订阅者通过`evaluate`方法重新计算值，`get`方法重新计算依赖。在依赖更新以后调用`update`方法。
+每一个订阅者通过`evaluate`方法重新计算值，`get`方法重新计算依赖。在依赖更新以后调用`update`方法
 
 ## Array优化
 Vue会给每一个被观察的对象及其子对象的添加一个`Observer`观察者，如果被观察的对象的数据量非常大的话，会造成大量的内存消耗，在渲染图表时，大数据量的需求是比较常见的。事实上vue对`Array`的监视也进行了优化，并没有对`Array`的所有属性进行劫持，而只是劫持来了被监视的`Array` 的`push`,`pop`,`shift`, `unshift`,`splice`, `sort`， `reverse`几个方法, 在用Vue对大数据量时，尽量使用Array进行渲染。

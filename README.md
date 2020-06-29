@@ -18,8 +18,9 @@
 ## tool - 工具使用
 ###  OllyDbg -反汇编工具
   主要用于window平台的反汇编[破解](./tool/OllyDbg/index.md)
-
+### opencv - 图像处理
 ## algorithm - 算法
+  主要用于算法的学习以及算法的相关应用（[webpack代码加密](./algorithm/application/webpack_code_encrypt.md)）总结。
 ### application - 应用
 * [验证码识别算法](./algorithm/application/verification_code_recognize.md)
 ### basic_theory - 基本理论
