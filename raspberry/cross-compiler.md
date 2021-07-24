@@ -6,7 +6,7 @@
 - 宿主系统环境 ubuntu 18.04
 - 树莓派环境 Linux version 4.19.97-v7l+
 
-## 升级 gcc、g++ 版本到 8.x
+## 升级宿主环境 gcc、g++ 版本到 8.x
 ```shell
 sudo apt-get update
 # 安装 gcc-8 和 g++-8
@@ -18,7 +18,7 @@ sudo ln -s gcc-8 gcc
 sudo ln -s g++-8
 ```
 
-## 编译 8.3 版本交叉编译器
+## 编译 8.3 版本交叉编译器 gcc
 
 1. 首先，需要确保系统安装了开发依赖项
 ```shell
@@ -52,7 +52,7 @@ contrib/download_prerequisites
 rm *.tar.*
 ```
 
-3. 将树莓派系统上的相关环境同步到本地系统中
+3. 将树莓派系统上的编译环境同步到本地系统中
 
 在将树莓派系统环境同步到本地之前，我们先配置下诉环境变量
 
@@ -75,6 +75,7 @@ export ARM_COMPILER_PATH=${ARM_TOOL_DIR}/gcc-arm-${ARM_COMPILER_VERSION}-${ARM_C
 # 将树莓派交叉工具链的可执行目录添加到 PATH
 export PATH=$PATH:${ARM_COMPILER_PATH}/bin
 ```
+**可以将上述脚本放到`/etc/profile.d/`目录下，从而在开机时会自动加载对应的环境变量**
 
 其中，树莓派系统环境将被同步到`RASP_SYSROOT_DIR`所在的目录下，交叉编译器将被安装到`ARM_COMPILER_PATH`目录下。
 
@@ -136,3 +137,72 @@ make install
 make -j8
 make install
 ```
+至此，交叉编译环境的gcc以及编译完毕。由于，之前配置的环境编译以及将交叉编译器的路径添加到`PATH`中，查看交叉gcc的版本如下
+```shell
+hybtalented@hybtaletented-163-com:~/study$ arm-linux-gnueabihf-gcc -v
+使用内建 specs。
+COLLECT_GCC=arm-linux-gnueabihf-gcc
+COLLECT_LTO_WRAPPER=/home/hybtalented/rpi-tools/tools/gcc-arm-8.3-raspberrypi-4.19.97-v7l+-arm-linux-gnueabihf/libexec/gcc/arm-linux-gnueabihf/8.3.0/lto-wrapper
+目标：arm-linux-gnueabihf
+配置为：../gcc-8.3.0/configure -v --with-pkgverion='8.3-raspberrypi-4.19.97-v7l+' --prefix=/home/hybtalented/rpi-tools/tools/gcc-arm-8.3-raspberrypi-4.19.97-v7l+-arm-linux-gnueabihf --target=arm-linux-gnueabihf --enable-languages=c,c++,fortran --with-arch=armv6 --with-fpu=vfp --with-float=hard --enable-multiarch --with-sysroot=/home/hybtalented/rpi-tools/raspberrypi/sysroot
+线程模型：posix
+gcc 版本 8.3.0 (GCC) 
+```
+可以尝试使用交叉编译器编译下述程序
+```c++
+// hello_world.c
+#include <stdio.h>
+
+int main() {
+    printf("hello wolrd\n");
+}
+```
+直接执行下述命令编译 hello word，测试编译器是否能够正常运行。
+
+```shell
+arm-linux-gnueabihf-gcc hello_world.c
+```
+
+## 配置交叉编译器 CMake
+
+在之前的小节，已经将树莓派系统中的编译环境同步到本地，并且编译并安装了交叉编译版本的 gcc， 在这个小节我们将要配置 CMake 交叉工具链。
+
+基于我们之前配置的环境变量 交叉工具链的CMake 配置如下
+```cmake
+# arm-cross-compile.cmake
+
+# 目标系统环境
+set(CMAKE_SYSTEM_NAME raspberrypi)
+set(CMAKE_SYSTEM_VERSION 4.19.97-v7l+)
+# 交叉编译器架构
+set(CMAKE_LIBRARY_ARCHITECTURE $ENV{ARM_COMPILER_ARCH} CACHE STRING "交叉编译器架构")
+# 系统根目录
+set(ARM_SYSROOT_DIR $ENV{RASP_SYSROOT_DIR})
+# 交叉编译器设置
+set(CMAKE_CXX_COMPILER ${CMAKE_LIBRARY_ARCHITECTURE}-g++)
+set(CMAKE_C_COMPILER ${CMAKE_LIBRARY_ARCHITECTURE}-gcc)
+# 交叉编译器目标环境
+set(CMAKE_FIND_ROOT_PATH  $ENV{ARM_COMPILER_PATH}/${CMAKE_LIBRARY_ARCHITECTURE})
+# CMake 系统文件目录，用于 CMake 相关包的搜索路径，以及 gcc 头文件和库文件的默认搜索目录
+set(CMAKE_SYSROOT ${ARM_SYSROOT_DIR})
+# 在宿主机和目标环境内寻找应用程序
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)
+
+# 只在目标环境内寻找包含文件和库文件和第三方CMake包
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+```
+
+在相应的 `CMakeLists.txt` 中添加下述语句
+```cmake
+include(arm-cross-compile.cmake)
+```
+
+或者执行 CMake 时添加
+
+```shell
+cmake -DCMAKE_TOOLCHAIN_FILE=${CURRENT_FOLDER}/arm-cross-compile.cmake
+```
+
+可以让 CMake 使用交叉工具链编译代码。
