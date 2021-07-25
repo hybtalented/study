@@ -94,7 +94,7 @@ source /opt/ros/melodic/setup.bash
 # 参考文献
 
 1. Cross-Compiling ROS for the Raspberry Pi, http://wiki.ros.org/ROS/CrossCompiling/RaspberryPi/Cross-Compile%20ROS%20for%20the%20RaspberryPi
-2. Installing melodic from source, http://wiki.ros.org/melodic/Installation/Source
+2. Installing ROS Melodic from source, http://wiki.ros.org/melodic/Installation/Source
 
 
 

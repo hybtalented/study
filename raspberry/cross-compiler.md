@@ -206,3 +206,8 @@ cmake -DCMAKE_TOOLCHAIN_FILE=${CURRENT_FOLDER}/arm-cross-compile.cmake
 ```
 
 可以让 CMake 使用交叉工具链编译代码。
+
+# 参考文献
+1. Building GCC as a cross compiler for Raspberry Pi， https://solarianprogrammer.com/2018/05/06/building-gcc-cross-compiler-raspberry-pi/
+
+2. Cross-Compiling ROS for the Raspberry Pi, http://wiki.ros.org/ROS/CrossCompiling/RaspberryPi/Cross-Compile%20ROS%20for%20the%20RaspberryPi
