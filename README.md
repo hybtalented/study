@@ -24,3 +24,10 @@
 ### application - 应用
 * [验证码识别算法](./algorithm/application/verification_code_recognize.md)
 ### basic_theory - 基本理论
+
+# raspberry - 树莓派学习
+  主要对树莓派学习中的环境搭建以及相关知识点进行记录和总结。
+# ros - ROS 学习
+  ROS的相关环境搭建，相关问题记录，以及知识点总结。
+* [交叉编译ros](./ros/cross-compile-ros.md)交叉编译 树莓派版本的ros
+* [相关工具安装](./ros/tools.md)交叉编译 树莓派版本的ros
