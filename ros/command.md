@@ -1,6 +1,7 @@
 # rospack -- ros 包管理
 * **rospack find [packageName]** 查找相应包的位置
-
+* **rospack depends1 [packageName]**　查看包的直接依赖
+* **rospack dependss [packageName]** 查看包的所有直接和间接依赖
 # roscd -- 进入相应的包目录
 
 ros 会从 `ROS_PACKAGE_PATH` 环境变量下的路径列表中查找相应的包，路径之间以 `:` 分隔。输入一下命令可以查看当前的ros包搜索路径
