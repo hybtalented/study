@@ -18,3 +18,11 @@ echo $ROS_PACKAGE_PATH
 * **rosls [packageName]** 显示指定包的根目录 `rosls roscpp_tutorials`
 * **rosls [packageName]/subdirs** 显示指定包的子目录 `rosls roscpp_tutorials/cmake`
 
+# ros 节点相关命令
+1. **roscore** 启动ros核心节点
+2. **rosnode list** 列出所有节点
+3. **rosnode info [nodeName]** 显示ROS节点信息
+4. **rosnode cleanup** 清理节点信息
+5. **rosnode ping [nodeName]** 用于确定节点是否仍然存活
+6. **rosrun [packageNode] [nodeName]** 运行节点
+
