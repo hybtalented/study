@@ -41,4 +41,5 @@ string name
 hybtalented@hybtaletented-163-com:~/study$ rosservice call /spawn 2 3 0.5 "hello"
 name: "hello"
 ```
-可以看到roscall的输出打印乌龟的名字。
+可以看到roscall的输出打印乌龟的名字。服务调用完后 `turtlesim_node`的窗口内添加了一只乌龟，如图所示
+![添加乌龟](./image/ros_service_spawn.png)
