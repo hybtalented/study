@@ -34,9 +34,42 @@ echo $ROS_PACKAGE_PATH
 
 - **rostopic bw [topicName]** 显示 ros 主题使用的带宽
 - **rostopic echo [topicName]** 打印指定的主题消息到屏幕
-- **rostopic hz [topicName]** 显示主题的发布率  
-- **rostopic list** 显示所有正在使用的主题
+- **rostopic hz [topicName]** 显示主题的发布率
+- **rostopic list** 显示所有正在使用的主题，加上`-v`选项可以显示主题的发布和订阅节点信息
 - **rostopic pub [topicName] [type] [args...]** 发布指定类型的数据到主题
 - **rostopic type [topicName]** 显示主题的类型
 
+# rosmsg -- ros 消息的相关类型展示
 
+- **rosmsg show [msgType]** 显示消息类型的详情
+- **rosmsg info [msgType]** 显示消息别名
+- **rosmsg list** 列出所有消息类型
+- **rosmsg md5 [msgType]** 显示消息的 md5 和
+- **rosmsg package [packageName]** 列出包使用的消息
+- **rosmsg packages** 列出所有包含消息的包
+
+# rosservice -- ros 服务相关操作
+
+- **rosservice list** 列出所有的 ros 服务
+- **rosservice call [serviceName] [...args]** 通过指定参数 args 调用服务
+- **rosservice type [serviceName]** 显示指定服务的服务类型
+- **rosservice find [serviceType]** 根据服务类型查找服务名称
+- **rosservice uri [serviceName]** 查看指定服务的rosrpc服务地址
+
+# rossrv -- ros 服务类型的相关信息展示
+
+- **rossrv show [serviceType]** 显示 ros 服务的请求和相应类型详情
+- **rossrv info [serviceType]** 显示 ros 服务的请求和相应类型别名
+- **rossrv list** 列出所有的服务类型
+- **rossrv md5** 显示服务类型的 md5 和
+- **rossrv package [packageName]** 列出包中的所有服务类型
+- **rossrv packages** 列出所有定义了服务的包
+
+# rosparam -- ros 参数相关操作
+
+- **rosparam set** set parameter
+- **rosparam get** get parameter
+- **rosparam load** load parameters from file
+- **rosparam dump** dump parameters to file
+- **rosparam delete** delete parameter
+- **rosparam list** list parameter names
