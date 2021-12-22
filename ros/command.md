@@ -67,9 +67,9 @@ echo $ROS_PACKAGE_PATH
 
 # rosparam -- ros 参数相关操作
 
-- **rosparam set** set parameter
-- **rosparam get** get parameter
-- **rosparam load** load parameters from file
-- **rosparam dump** dump parameters to file
-- **rosparam delete** delete parameter
-- **rosparam list** list parameter names
+- **rosparam set [paramName] [paramValue]** 设置参数的值
+- **rosparam get [paramName]** 获取参数的值，如果参数名 paramName 为 /， 将会显示整个ros参数服务器的内容
+- **rosparam load [fileName] [namespace]** 从指定文件名字读取 ros 参数到 ros 参数服务器的指定命名空间下
+- **rosparam dump [fileName] [namespace]** 保存指定命名空间下的 ros 参数到对应文件名中，保存的格式为 yaml 格式
+- **rosparam delete [paramName]** 删除对应参数
+- **rosparam list** 列出所有的参数

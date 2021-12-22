@@ -1,0 +1,10 @@
+rosdistro: 'melodic
+
+  '
+roslaunch:
+  uris: {host_hybtaletented_163_com__43175: 'http://hybtaletented-163-com:43175/'}
+rosversion: '1.14.12
+
+  '
+run_id: d6b972f2-6331-11ec-ba38-e09467e33a05
+turtlesim: {background_b: 150, background_g: 100, background_r: 200}
