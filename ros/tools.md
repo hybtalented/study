@@ -8,4 +8,6 @@
 | --------- | --------- | -------------- |
 | rqt_graph | rqt_graph | 查看节点和主题 |
 | rqt_plot | rqt_plot | 消息作图 |
+| rqt_console | rqt_console | 显示节点的输出 |
+| rqt_logger_level | rqt_logger_level | 更改各节点日志的显示级别 |
 

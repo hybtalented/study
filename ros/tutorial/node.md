@@ -318,3 +318,30 @@ float32 angular_velocity
 ```
 因此在`rqt_plot`节点启动的窗口中将 `/turtle1/pose/x` 和 `/turtle1/pose/y`添加到坐标中，可以获得如下所示的图
 ![ros作图](./image/ros_plot_turtlesim.png)
+
+
+# 节点调试相关功能
+`rqt_console`可以查看节点的输出，执行
+```shell
+rosrun rqt_console rqt_console
+```
+节点将会弹出一个下图所示的界面
+![rqt_console 界面](./image/ros_console.png)
+
+从中可以查看节点的输出，或者筛选查看的日志级别。
+
+接着，启动 `rqt_logger_level` 节点来更改节点的日志级别
+```shell
+rosrun rqt_logger_level rqt_logger_level
+```
+如下图所示
+![rqt_logger_level 界面](./image/ros_logger_level.png)
+
+修改日志级别为 `Warn`，然后发送修改`turtlesim_node`　速度的 ros　主题
+```shell
+rostopic pub /turtle1/cmd_vel geometry_msgs/Twist -r 1 -- '{ linear: {x: 2.0, y: 0.0, z: 0.0 }, angular: { x: 0.0, y: 0.0, z: 0.0 } }'
+```
+可以看到乌龟移动碰到墙壁时，会一直输出 `Warn` 日志
+![turtlesim warn 日志](./image/ros_console_turtlesim_warn.png)
+
+# 根据配置文件启动节点
