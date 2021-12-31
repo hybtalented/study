@@ -83,3 +83,34 @@ Install space: /home/hybtalented/rpi-tools/ros_study/catkin_ws/install
 **注意: 上述的shell命令中 catkin_ws 实际上并不在home目录下。**
 
 从上面的输出结果可以看到，执行`catkin_make`实际上可以分为两个步骤。首先执行的是cmake命令，负责生成Makefile文件，命令输出的最开始为编译过程中的相关路径的配置，以及实际上的cmake的完整命令和cmake的输出；随后执行的是make命令，完成项目的编译。
+
+# 编写ros包
+
+## 编辑ros包代码
+
+使用 `rosed` 命令可以快速的编辑包下的源代码，例如可以通过一下命令编辑`roscpp`包中的`Logger.msg`文件
+
+```shell
+rosed roscpp Logger.msg
+```
+
+默认情况下执行`rosed`会打开`vim`对文件进行编辑，可以修改环境变量`EDITOR`更改默认的编辑器，例如通过如下环境变量配置可以把默认编辑改为 `gedit`
+
+```shell
+export EDITOR='gedit
+```
+
+`rosed` 会自动遍历搜索对应包的源代码路径下的所有文件，在完成包名的输入后，按两下 `Tab` 键可以列出所有包里的所有文件，如下所示
+```shell
+hybtalented@hybtaletented-163-com:~/rpi-tools/ros_study/catkin_ws/src/beginner_tutorials/launch$ rosed roscpp 
+Empty.srv                   roscpp.cmake
+genmsg_cpp.py               roscppConfig.cmake
+gensrv_cpp.py               roscppConfig-version.cmake
+GetLoggers.srv              roscpp-msg-extras.cmake
+Logger.msg                  roscpp-msg-paths.cmake
+msg_gen.py                  SetLoggerLevel.srv
+package.xml
+```
+同时在输入部分文件名后，也可以通过 `Tab` 键自动补全。
+
+**注意： 如果有多个文件的文件名重复，在调用 `rosed` 指定该文件名时，会弹出一个菜单让我们可以选择具体的文件。**

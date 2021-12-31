@@ -21,6 +21,10 @@ echo $ROS_PACKAGE_PATH
 - **rosls [packageName]** 显示指定包的根目录 `rosls roscpp_tutorials`
 - **rosls [packageName]/subdirs** 显示指定包的子目录 `rosls roscpp_tutorials/cmake`
 
+
+# rosed -- ros 相关文件的编辑
+
+- **rosed [packageName] [fileName]** 编辑指定包中的一个文件
 # ros 节点相关命令
 
 - **roscore** 启动 ros 核心节点
@@ -28,7 +32,8 @@ echo $ROS_PACKAGE_PATH
 - **rosnode info [nodeName]** 显示 ROS 节点信息
 - **rosnode cleanup** 清理节点信息
 - **rosnode ping [nodeName]** 用于确定节点是否仍然存活
-- **rosrun [packageNode] [nodeName]** 运行节点
+- **rosrun [packageNode] [nodeName] [?ARGS]** 运行节点
+- **roslaunch [packageName] [fileName.launch]** 根据指定包下的相应的launch文件启动一个或多个ros节点
 
 # rostopic -- ros 主题相关操作
 
@@ -74,8 +79,3 @@ echo $ROS_PACKAGE_PATH
 - **rosparam delete [paramName]** 删除对应参数
 - **rosparam list** 列出所有的参数
 
-# rosrun -- 启动ros节点
-- **rosrun [packageName] [executableName] [?ARGS]** 启动指定包中的指定名称的可执行程序
-# roslaunch -- 根据配置文件启动节点
-
-- **roslaunch [packageName] [fileName.launch]** 根据指定包下的相应的launch文件启动一个或多个ros节点
