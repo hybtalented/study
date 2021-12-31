@@ -345,3 +345,113 @@ rostopic pub /turtle1/cmd_vel geometry_msgs/Twist -r 1 -- '{ linear: {x: 2.0, y:
 ![turtlesim warn 日志](./image/ros_console_turtlesim_warn.png)
 
 # 根据配置文件启动节点
+
+ros 节点除了通过 `rosrun` 进行启动以外，还可以通过 launch 配置文件的方式进行启动。 
+
+首先通过 `roscd` 命令进入在[ros 包的学习](./package.md)中创建的ros教程目录
+```shell
+hybtalented@hybtaletented-163-com:~/study$ roscd beginner_tutorials
+roscd: No such package/stack 'beginner_tutorials'
+```
+如果出现上述报错，首先需要加载对应包的配置脚本
+
+```shell
+source ~/rpi-tools/ros_study/catkin_ws/devel/setup.sh
+```
+
+在进入 `beginner_tutorials` 包的目录后，创建并进入`launch`目录, 然后创建一个名为 `turtlemimic.launch` 的launch 文件，并在launch文件中输入以下的内容
+```xml
+<launch>
+   <group ns="turtlesim1">
+     <node pkg="turtlesim" name="sim" type="turtlesim_node"/>
+   </group> 
+   <group ns="turtlesim2">
+     <node pkg="turtlesim" name="sim" type="turtlesim_node"/>
+   </group>
+   <node pkg="turtlesim" name="mimic" type="mimic">
+     <remap from="input" to="turtlesim1/turtle1"/>
+     <remap from="output" to="turtlesim2/turtle1"/>
+   </node>
+</launch>
+```
+launch 文件实际上是一个特殊的xml文件，文件以 根 `<launch>` 标签作为入口。在上述配置中，我们可以通过`<group>`标签将节点指定到对应的命名空间下，而不会造成两个节点的发布订阅的主题名和服务名冲突；通过 `<node>` 指定需要运行的节点；通过 `<remap>` 标签可以将节点中的发布和订阅的主题名称进行重新映射。
+
+下面执行　`roslaunch`命令启动节点,　如下所示
+```shell
+hybtalented@hybtaletented-163-com:~/rpi-tools/ros_study/catkin_ws/src/beginner_turials/launch$ roslaunch beginner_tutorials turtlemimic.launch 
+... logging to /home/hybtalented/.ros/log/d6b972f2-6331-11ec-ba38-e09467e33a05/roslaunch-hybtaletented-163-com-30508.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+
+started roslaunch server http://hybtaletented-163-com:42179/
+
+SUMMARY
+========
+
+PARAMETERS
+ * /rosdistro: melodic
+ * /rosversion: 1.14.12
+
+NODES
+  /
+    mimic (turtlesim/mimic)
+  /turtlesim1/
+    sim (turtlesim/turtlesim_node)
+  /turtlesim2/
+    sim (turtlesim/turtlesim_node)
+
+ROS_MASTER_URI=http://localhost:11311
+
+process[turtlesim1/sim-1]: started with pid [30534]
+process[turtlesim2/sim-2]: started with pid [30535]
+process[mimic-3]: started with pid [30536]
+```
+然后在发布一个主题让　`turtlesim1/sim`　节点进行运动，
+```shell
+hybtalented@hybtaletented-163-com:~/study$ rostopic pub /turtlesim1/turtle1/cmd_vel geometry_msgs/Twist -r 1 -- '[2.0, 0.0, 0.0]' '[0.0, 0.0, -1.8]'
+```
+可以发现两个窗口中的乌龟会一起进行转圈。
+
+通过　`rqt_graph` 工具可以更好的理解上述 `launch`　文件的含义
+```shell
+rqt_graph
+```
+如图所示
+![节点主题订阅情况](./image/ros_roslaunch_turtlemimic.png)
+
+其中　`mimic` 原始的主题的发布和订阅情况如下所示
+```
+hybtalented@hybtaletented-163-com:~/study$ rosnode info /mimic
+--------------------------------------------------------------------------------
+Node [/mimic]
+Publications: 
+ * /rosout [rosgraph_msgs/Log]
+ * /turtlesim2/turtle1/cmd_vel [geometry_msgs/Twist]
+
+Subscriptions: 
+ * /turtlesim1/turtle1/pose [turtlesim/Pose]
+
+Services: 
+ * /mimic/get_loggers
+ * /mimic/set_logger_level
+
+
+contacting node http://hybtaletented-163-com:43553/ ...
+Pid: 30536
+Connections:
+ * topic: /rosout
+    * to: /rosout
+    * direction: outbound (33061 - 192.168.2.148:53738) [11]
+    * transport: TCPROS
+ * topic: /turtlesim2/turtle1/cmd_vel
+    * to: /turtlesim2/sim
+    * direction: outbound (33061 - 192.168.2.148:53760) [14]
+    * transport: TCPROS
+ * topic: /turtlesim1/turtle1/pose
+    * to: /turtlesim1/sim (http://hybtaletented-163-com:39539/)
+    * direction: inbound (50204 - hybtaletented-163-com:54371) [10]
+    * transport: TCPROS
+```
+
+由此，我们可以得出结论，上述的　launch 文件实际上在 `turtlesim1` 和 `turtlesim2` 两个命名空间中个创建了一个名为 `sim` 的 `turtlesim_node` 节点，然后创建了一个 `mimic` 节点， 并将 `mimic` 的 `/input` 主题重新映射到`/turtlesim1/turtle1`, `mimic` 的 `/output` 主题重新映射到`/turtlesim2/turtle1`。`mimic`节点实现了　`turtlesim２/sim` 对　`turtlesim1/sim`　的运动进行模仿。

@@ -73,3 +73,9 @@ echo $ROS_PACKAGE_PATH
 - **rosparam dump [fileName] [namespace]** 保存指定命名空间下的 ros 参数到对应文件名中，保存的格式为 yaml 格式
 - **rosparam delete [paramName]** 删除对应参数
 - **rosparam list** 列出所有的参数
+
+# rosrun -- 启动ros节点
+- **rosrun [packageName] [executableName] [?ARGS]** 启动指定包中的指定名称的可执行程序
+# roslaunch -- 根据配置文件启动节点
+
+- **roslaunch [packageName] [fileName.launch]** 根据指定包下的相应的launch文件启动一个或多个ros节点
