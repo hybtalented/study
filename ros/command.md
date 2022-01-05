@@ -4,22 +4,20 @@
 - **rospack depends1 [packageName]**　查看包的直接依赖
 - **rospack dependss [packageName]** 查看包的所有直接和间接依赖
 
-# roscd -- 进入相应的包目录
+**ros 会从 `ROS_PACKAGE_PATH` 环境变量下的路径列表中查找相应的包，路径之间以 `:` 分隔。输入一下命令可以查看当前的 ros 包搜索路径**
+# ros 文件和目录相关操作
 
-ros 会从 `ROS_PACKAGE_PATH` 环境变量下的路径列表中查找相应的包，路径之间以 `:` 分隔。输入一下命令可以查看当前的 ros 包搜索路径
+
 
 ```shell
 echo $ROS_PACKAGE_PATH
 ```
 
-- **roscd [packageName]** 进入指定包的根目录，如 `roscd roscpp`
-- **roscd [packageName]/subdirs** 进入指定包的相应子目录，如 `roscd roscpp/cmake`
+- **roscd [packageName][?/subdirs]** 进入指定包的相应子目录
 - **roscd log** 进入 ros 的日志目录
-
-# rosls -- 直接显示 ros 相应包的内容
-
-- **rosls [packageName]** 显示指定包的根目录 `rosls roscpp_tutorials`
-- **rosls [packageName]/subdirs** 显示指定包的子目录 `rosls roscpp_tutorials/cmake`
+- **roscp [packageName] [filePath] [targetPath]** 拷贝对应包下的相应文件到指定目录
+- **roscat [packageName] [fileName]** 显示对应包中指定文件的内容
+- **rosls [packageName][?/subdirs]** 显示指定包的子目录下的内容
 
 
 # rosed -- ros 相关文件的编辑

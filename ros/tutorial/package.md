@@ -132,11 +132,11 @@ package.xml
 
 **注意： 如果有多个文件的文件名重复，在调用 `rosed` 指定该文件名时，会弹出一个菜单让我们可以选择具体的文件。**
 
-# 编写 ros 消息文件
+# 编写 ros 消息定义文件
 
-ros 消息文件是一个描述 ros 消息字段的文件，该文件可以用于生成各种语言的消息源代码。
+ros 消息定义文件是一个描述 ros 消息字段的文件，该文件可以用于生成各种语言的消息源代码。
 
-消息文件放在包源代码路径下的 `msg` 目录下，他是一个文本文件，文件中的每一行用于描述消息的字段类型和字段名称。
+消息定义文件放在包源代码路径下的 `msg` 目录下，他是一个文本文件，文件中的每一行用于描述消息的字段类型和字段名称。
 
 ros 中的字段类型包括
 
@@ -144,10 +144,10 @@ ros 中的字段类型包括
 - 浮点数类型: float32, float64
 - 字符串类型: string
 - 时间类型: time, duration
-- 其他消息文件定义的类型
+- 其他消息定义文件定义的类型
 - 数组类型: 不定长数组 array[] 和 定长数组 array[C]
 
-下面代码在 `beginner_tutorials` 包中创建了一个名叫 Num.msg 的消息文件
+下面代码在 `beginner_tutorials` 包中创建了一个名叫 Num.msg 的消息定义文件
 
 ```shell
 roscd beginner_tutorials/
@@ -165,7 +165,7 @@ echo 'int64 num' > msg/Num.msg
 <exec_depend>message_runtime</exec_depend>
 ```
 
-然后修改包的`CMakeLists.txt`文件, 让 cmake 能够自动生成消息文件源代码
+然后修改包的`CMakeLists.txt`文件, 让 cmake 能够自动生成消息定义的源代码
 1. 在 find_package 函数中添加 `message_generation` 依赖, 这个依赖让我们可以使用消息生成相关的 cmake api
 
 ```cmake
@@ -190,9 +190,10 @@ catkin_package(
 )
 ```
 
-3. 添加消息文件
+3. 添加消息定义文件
 
 ```cmake
+## Generate messages in the 'msg' folder
 add_message_files(
   FILES
   Num.msg
@@ -224,4 +225,83 @@ catkin_make
 cd - 
 ```
 
-自动生成的消息代码文件存放在 `devel` 目录下, 其中 c++ 头文件生成在 `devel/include/beginner_tutorials/`, python 脚本文件创建在 `devel/lib/python2.7/dist-packages/beginner_tutorials/msg` 目录下, lisp 文件创建在 `devel/share/common-lisp/ros/beginner_tutorials/msg/` 目录下, nodejs 文件创建在 `devel/share/gennodejs/ros/beginner_tutorials/msg` 目录下.
+自动生成的消息源代码存放在 `devel` 目录下, 其中 c++ 头文件生成在 `devel/include/beginner_tutorials/`, python 脚本文件创建在 `devel/lib/python2.7/dist-packages/beginner_tutorials/msg` 目录下, lisp 文件创建在 `devel/share/common-lisp/ros/beginner_tutorials/msg/` 目录下, nodejs 文件创建在 `devel/share/gennodejs/ros/beginner_tutorials/msg` 目录下.
+
+# 编写 ros 服务定义文件
+
+ros 服务定义文件用于描述一个服务的请求以及响应, 它的文件结构与消息定义文件类似, 只不过文件中包含了 请求和响应的两种类型定义,两种类型定义之间用 `---`分隔. 
+
+下面我们将编写并编译一个 ros 服务定义文件.
+
+首先进入 `beginner_tutorials` 的源代码目录, 并创建 `srv` 文件夹
+
+```shell
+roscd beginner_tutorials
+mkdir srv
+```
+
+我们从 `rospy_tutorials` 中拷贝 `AddTwoInts.srv` 服务定义文件到 `srv` 目录中
+
+```shell
+roscp rospy_tutorials  AddTwoInts.srv srv/
+```
+
+`AddTwoInts.srv` 中的内容如下所示. 该服务定义文件中定义了一个请求类型,该类型中包括2个6位整形数 `a`, `b`; 在分隔符`---` 后又定义了一个相应类型为整形的`sum`. 
+```shell
+roscat beginner_tutorials AddTwoInts.srv 
+int64 a
+int64 b
+---
+int64 sum
+```
+
+同 消息定义文件 一样, 服务定义文件也需要在 package.xml 中添加`message_generation` 和 `message_runtime` 两个依赖
+
+```xml
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+```
+
+然后我需要修改 `beginner_tutorials` 包的 `CMakeLists.txt` 文件中的配置
+
+1. 添加 `message_generation` 依赖
+```cmake
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  rospy
+  std_msgs
+  message_generation
+)
+```
+
+2. 添加服务文件
+
+```cmake
+## Generate services in the 'srv' folder
+add_service_files(
+  FILES
+  AddTwoInts.srv
+)
+```
+
+接着我们就可以通过 `rossrv show` 命令查看该服务文件的内容
+
+
+```
+hybtalented@hybtaletented-163-com:~/rpi-tools/ros_study/catkin_ws/src/beginner_tutorials$ rossrv show beginner_tutorials/AddTwoInts 
+int64 a
+int64 b
+---
+int64 sum
+```
+
+最后, 类似于消息定义文件一样生成相应语言的源代码
+
+```shell
+cd beginner_tutorials
+cd ../../
+catkin_make
+cd -
+```
+
+自动生成的服务源代码存放在 `devel` 目录下, 其中 c++ 头文件生成在 `devel/include/beginner_tutorials/`, python 脚本文件创建在 `devel/lib/python2.7/dist-packages/beginner_tutorials/srv` 目录下, lisp 文件创建在 `devel/share/common-lisp/ros/beginner_tutorials/srv` 目录下, nodejs 源代码文件创建在 `devel/share/gennodejs/ros/beginner_tutorials/srv` 目录下.
