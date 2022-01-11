@@ -132,8 +132,8 @@ package.xml
 
 **注意： 如果有多个文件的文件名重复，在调用 `rosed` 指定该文件名时，会弹出一个菜单让我们可以选择具体的文件。**
 
-# 编写 ros 消息定义文件
-
+#  ros 消息相关代码编写
+## 编写 ros 消息定义文件
 ros 消息定义文件是一个描述 ros 消息字段的文件，该文件可以用于生成各种语言的消息源代码。
 
 消息定义文件放在包源代码路径下的 `msg` 目录下，他是一个文本文件，文件中的每一行用于描述消息的字段类型和字段名称。
@@ -178,9 +178,9 @@ find_package(catkin REQUIRED COMPONENTS
 ```
 2. 在 `message_runtime` 包添加到运行时依赖中, catkin_package 用于生成 cmake 配置文件, 其他包通过调用 find_package 依赖该包时做如下操作
 - INCLUDE_DIRS: 将对应目录添加到包含目录中
-## LIBRARIES: 将对应的库添加到依赖库中
-## CATKIN_DEPENDS: 将对应的ros包添加到ros依赖包中
-## DEPENDS: 将系统依赖性添加到依赖项中
+- LIBRARIES: 将对应的库添加到依赖库中
+- CATKIN_DEPENDS: 将对应的ros包添加到ros依赖包中
+- DEPENDS: 将系统依赖性添加到依赖项中
 ```cmake
 catkin_package(
 #  INCLUDE_DIRS include
@@ -227,6 +227,226 @@ cd -
 
 自动生成的消息源代码存放在 `devel` 目录下, 其中 c++ 头文件生成在 `devel/include/beginner_tutorials/`, python 脚本文件创建在 `devel/lib/python2.7/dist-packages/beginner_tutorials/msg` 目录下, lisp 文件创建在 `devel/share/common-lisp/ros/beginner_tutorials/msg/` 目录下, nodejs 文件创建在 `devel/share/gennodejs/ros/beginner_tutorials/msg` 目录下.
 
+## ros 节点发布消息
+进入 `beginner_tutorials` 目录,
+```shell
+roscd beginner_tutorials
+```
+并在 `src` 目录下创建一个 `talker.cpp` 文件, 开始编写一个节点来发布消息
+```cpp
+#include <ros/ros.h>
+#include <std_msgs/String.h>
+
+#include <sstream>
+
+int main(int argc, char **argv) {
+  /**
+   * 初始化 ros 节点
+   *
+   * ros 节点是通过 ros::init 函数进行初始化的,
+   * 初始化参数可以这里一样通过命令行闯入, 也可以通过该函数的重载通过程序来配置.
+   * 最后一个参数 "talker" 指定了节点的名字.
+   */
+  ros::init(argc, argv, "talker");
+  /**
+   * ros 节点通过 ros::NodeHandle 与 ros 系统交互, 在一个进程中可以多次构造
+   * ros::NodeHandle, 但是只有第一次构造会将ros节点注册到ros系统中, 而最后一个
+   * ros::NodeHandle 的销毁或导致节点的关闭.
+   */
+  ros::NodeHandle handle;
+
+  /**
+   * 通过 NodeHandle::advertise 可以通知 ros 的 master
+   * 节点该节点将发布指定主题的消息, 而 master 节点会通知
+   * 所有订阅了该主题的其他节点与该节点协商建立一个点对点的连接. advertise
+   * 方法会返回一个发布者对象, 通过该对象可以 发布对应主题的消息,
+   * 当该对象以及所有该对象的拷贝销毁后, 将会通知 master
+   * 节点该节点不在发布对应主题的消息.
+   *
+   * advertise 方法的第二个参数指定了消息发布队列的大小,
+   * 当待发送消息的数量大于消息发送的速度时, 未发送的消息将缓存在 消息队列中,
+   * 而当消息队列中的消息到达这个大小后, 后续的消息将会被丢弃.
+   */
+  ros::Publisher chatter_pub =
+      handle.advertise<std_msgs::String>("chatter", 1000);
+
+  /**
+   * 通过 loop_rate 可以控制循环的调用频率 
+   */
+  ros::Rate loop_rate(10);
+  int count = 0;
+  /**
+   * ok 方法的返回值将一直为true 知道 ros::showdown 方法被调用
+   */
+  while (ros::ok()) {
+    std_msgs::String msg;
+    std::stringstream ss;
+
+    ss << "hello world " << count++;
+    msg.data = ss.str();
+
+    ROS_INFO("publishing %s", msg.data.c_str());
+    
+    /**
+     * 发布一个消息, 发布的消息类型必须要与 advertise 创建是指定的模板参数一致.
+     */
+    chatter_pub.publish(msg);
+
+    /**
+     * 完成一次 ros 消息循环
+     */
+    ros::spinOnce();
+    /**
+     * 等待剩余的时间后再次运行循环
+     */
+    loop_rate.sleep();
+  }
+  ROS_INFO("ros chatter node is shutdown");
+  return 0;
+}
+```
+
+编写玩`talker.cpp`代码以后 beginner_tutorials 的 `CMakeLists.txt` 中, 配置 `talker` 节点的编译
+
+```cmake
+add_executable(talker src/talker.cpp)
+target_link_libraries(talker ${catkin_LIBRARIES})
+add_dependencies(talker beginner_tutorials_generate_messages_cpp)
+```
+
+上述配置中  add_dependencies 告诉 cmake 需要先编译完目标 beginner_tutorials_generate_messages_cpp 后才能编译 `talker` 节点, 其中 `beginner_tutorials_generate_messages_cpp` 为 catkin 自动生成的用于消息定义文件和服务定义文件对应的相关头文件.
+
+然后就可以通过 `catkin_make` 命令编译 `talker` 节点了
+```shell
+roscd beginner_tutorials
+cd ../../
+catkin_make
+```
+
+生成的二进制文件可以在 `devel/beginner_tutorials/lib` 目录下找到.
+
+## ros 节点订阅消息
+
+这一小节, 我们将会编写一个ros 节点实现对 ros 主题的订阅, 在 `beginner_tutorials` 的 `src` 目录小创建一个 `listener.cpp` 文件, 并在文件内输入入校的代码
+```cpp
+#include <ros/ros.h>
+#include <std_msgs/String.h>
+
+/**
+ * 订阅的 ROS chatter 消息处理函数
+ */
+void chatterCallback(const std_msgs::StringConstPtr &msg) {
+    ROS_INFO("I hear: [%s]", msg->data.c_str());
+}
+int main(int argc, char **argv) {
+  /**
+   * 初始化ros节点
+   */
+  ros::init(argc, argv, "listener");
+
+  /**
+   * 创建一个节点句柄, 实现与ros系统的交互
+   */
+  ros::NodeHandle handle;
+
+  /**
+   * 订阅对应的 ros 主题
+   *
+   * 通知 ros master 节点该节点订阅的相应的主题, 并自动连接到对应主题的发布者上.
+   * 当发布者发布该主题的消息 后, 将会调用回调函数 chatterCallback. subscribe
+   * 方法返回一个订阅者实例, 节点将会一直订阅该主题,
+   * 直到该订阅者实例及其所有的拷贝被销毁.
+   *
+   * subscribe 的第二个参数表示消息接收队列的大小.
+   * 当消息的接收速度大于处理的速度时, 接收到的消息将会缓冲到 消息接收队列中,
+   * 当消息接收队列满了以后, 后续的消息将会被丢弃.
+   */
+  ros::Subscriber sub = handle.subscribe("chatter", 1000, chatterCallback);
+  /**
+   * 进入ros的消息循环
+   * 
+   * ros 消息循环将会处理各种消息回调, 当没有任何回调消息循环将会阻塞, 因此不会
+   * 大量占用cpu. 消息循环会一直运行知道 ros::ok 返回 false, 也就是是说下列条件
+   * 中的一个或多个达成
+   * 1. 收到 SIGINT 信号(如用户按下了 Ctrl+C)
+   * 2. 应用程序调用了 ros::shutdown 方法
+   * 3. 所有的 NodeHandle 实例都被销毁了
+   * 4. 另一个同名的节点启动了
+   * 
+   * 需要注意的是它不会处理自定义队列中的回调.
+   */
+  ros::spin();
+  return 0;
+}
+```
+
+然后在 `beginner_tutorials` 的 `CMakelists.txt` 添加节点的生成目标.
+
+```cmake
+add_executable(listener src/listener.cpp)
+target_link_libraries(listener ${catkin_LIBRARIES})
+add_dependencies(listener beginner_tutorials_generate_messages_cpp)
+```
+
+然后执行 `catkin_make` 命令后, 将会在 `devel/lib/beginner_tutorials` 目录生成 listener 的目标文件.
+
+## 运行 talker 和 listener 节点
+
+首先运行 talker 节点,其结果如下所示
+```shell
+hybtalented@hybtaletented-163-com:~/study$ rosrun beginner_tutorials talker 
+[ INFO] [1641906339.355230121]: publishing hello world 0
+[ INFO] [1641906339.455316689]: publishing hello world 1
+[ INFO] [1641906339.555276639]: publishing hello world 2
+[ INFO] [1641906339.655316747]: publishing hello world 3
+[ INFO] [1641906339.755277087]: publishing hello world 4
+[ INFO] [1641906339.855319454]: publishing hello world 5
+[ INFO] [1641906339.955314323]: publishing hello world 6
+[ INFO] [1641906340.055317790]: publishing hello world 7
+[ INFO] [1641906340.155296715]: publishing hello world 8
+[ INFO] [1641906340.255296652]: publishing hello world 9
+[ INFO] [1641906340.355292371]: publishing hello world 10
+[ INFO] [1641906340.455284093]: publishing hello world 11
+[ INFO] [1641906340.555281433]: publishing hello world 12
+[ INFO] [1641906340.655320127]: publishing hello world 13
+[ INFO] [1641906340.755274287]: publishing hello world 14
+[ INFO] [1641906340.855289592]: publishing hello world 15
+```
+
+如果运行命令后报如下所示的错误
+
+```shell
+hybtalented@hybtaletented-163-com:~/study$ rosrun beginner_tutorials talker
+[rospack] Error: package 'beginner_tutorials' not found
+```
+
+这时需要在终端内加载对应工作空间的环境配置脚本
+```shell
+source ~/rpi-tools/ros_study/catkin_ws/devel/setup.sh 
+```
+
+随后运行 listener 节点
+
+```shell
+hybtalented@hybtaletented-163-com:~/study$ rosrun beginner_tutorials listene[ INFO] [1641906343.456092486]: I hear: [hello world 41]
+[ INFO] [1641906343.555699447]: I hear: [hello world 42]
+[ INFO] [1641906343.655894142]: I hear: [hello world 43]
+[ INFO] [1641906343.755663323]: I hear: [hello world 44]
+[ INFO] [1641906343.855644832]: I hear: [hello world 45]
+[ INFO] [1641906343.956037170]: I hear: [hello world 46]
+[ INFO] [1641906344.055899031]: I hear: [hello world 47]
+[ INFO] [1641906344.155718945]: I hear: [hello world 48]
+[ INFO] [1641906344.255980220]: I hear: [hello world 49]
+[ INFO] [1641906344.355700490]: I hear: [hello world 50]
+[ INFO] [1641906344.455738236]: I hear: [hello world 51]
+[ INFO] [1641906344.555537344]: I hear: [hello world 52]
+[ INFO] [1641906344.655636059]: I hear: [hello world 53]
+[ INFO] [1641906344.755719077]: I hear: [hello world 54]
+[ INFO] [1641906344.856080192]: I hear: [hello world 55]
+[ INFO] [1641906344.955868093]: I hear: [hello world 56]
+[ INFO] [1641906345.055791361]: I hear: [hello world 57]
+[ INFO] [1641906345.155701891]: I hear: [hello world 58]
+```
 # 编写 ros 服务定义文件
 
 ros 服务定义文件用于描述一个服务的请求以及响应, 它的文件结构与消息定义文件类似, 只不过文件中包含了 请求和响应的两种类型定义,两种类型定义之间用 `---`分隔. 
