@@ -132,8 +132,10 @@ package.xml
 
 **注意： 如果有多个文件的文件名重复，在调用 `rosed` 指定该文件名时，会弹出一个菜单让我们可以选择具体的文件。**
 
-#  ros 消息相关代码编写
+# ros 消息及其发布订阅的写法
+
 ## 编写 ros 消息定义文件
+
 ros 消息定义文件是一个描述 ros 消息字段的文件，该文件可以用于生成各种语言的消息源代码。
 
 消息定义文件放在包源代码路径下的 `msg` 目录下，他是一个文本文件，文件中的每一行用于描述消息的字段类型和字段名称。
@@ -166,6 +168,7 @@ echo 'int64 num' > msg/Num.msg
 ```
 
 然后修改包的`CMakeLists.txt`文件, 让 cmake 能够自动生成消息定义的源代码
+
 1. 在 find_package 函数中添加 `message_generation` 依赖, 这个依赖让我们可以使用消息生成相关的 cmake api
 
 ```cmake
@@ -176,16 +179,19 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
 )
 ```
+
 2. 在 `message_runtime` 包添加到运行时依赖中, catkin_package 用于生成 cmake 配置文件, 其他包通过调用 find_package 依赖该包时做如下操作
+
 - INCLUDE_DIRS: 将对应目录添加到包含目录中
 - LIBRARIES: 将对应的库添加到依赖库中
-- CATKIN_DEPENDS: 将对应的ros包添加到ros依赖包中
+- CATKIN_DEPENDS: 将对应的 ros 包添加到 ros 依赖包中
 - DEPENDS: 将系统依赖性添加到依赖项中
+
 ```cmake
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES beginner_tutorials
-  CATKIN_DEPENDS message_runtime 
+  CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
 )
 ```
@@ -201,6 +207,7 @@ add_message_files(
 ```
 
 4. 最后一步, 设置自动生成消息
+
 ```cmake
 generate_messages(
   DEPENDENCIES
@@ -211,28 +218,33 @@ generate_messages(
 完成以上操作以后,我们可以就通过 rosmsg 命令查看消息了
 
 ```shell
-hybtalented@hybtaletented-163-com:~/rpi-tools/ros_study/catkin_ws/src/beginner_tutorials$ rosmsg show beginner_tutorials/Num 
+hybtalented@hybtaletented-163-com:~/rpi-tools/ros_study/catkin_ws/src/beginner_tutorials$ rosmsg show beginner_tutorials/Num
 int64 num
 ```
 
-完成CMake文件的修改以后,下一步可以使用 `catkin_make`命令生成消息代码相应的源文件
+完成 CMake 文件的修改以后,下一步可以使用 `catkin_make`命令生成消息代码相应的源文件
+
 ```shell
 # 回到 catkin 工作空间根目录
 cd ../../
 # 编译源代码
-catkin_make 
+catkin_make
 # 回到 begin_tutorials 目录
-cd - 
+cd -
 ```
 
 自动生成的消息源代码存放在 `devel` 目录下, 其中 c++ 头文件生成在 `devel/include/beginner_tutorials/`, python 脚本文件创建在 `devel/lib/python2.7/dist-packages/beginner_tutorials/msg` 目录下, lisp 文件创建在 `devel/share/common-lisp/ros/beginner_tutorials/msg/` 目录下, nodejs 文件创建在 `devel/share/gennodejs/ros/beginner_tutorials/msg` 目录下.
 
 ## ros 节点发布消息
+
 进入 `beginner_tutorials` 目录,
+
 ```shell
 roscd beginner_tutorials
 ```
+
 并在 `src` 目录下创建一个 `talker.cpp` 文件, 开始编写一个节点来发布消息
+
 ```cpp
 #include <ros/ros.h>
 #include <std_msgs/String.h>
@@ -271,7 +283,7 @@ int main(int argc, char **argv) {
       handle.advertise<std_msgs::String>("chatter", 1000);
 
   /**
-   * 通过 loop_rate 可以控制循环的调用频率 
+   * 通过 loop_rate 可以控制循环的调用频率
    */
   ros::Rate loop_rate(10);
   int count = 0;
@@ -286,7 +298,7 @@ int main(int argc, char **argv) {
     msg.data = ss.str();
 
     ROS_INFO("publishing %s", msg.data.c_str());
-    
+
     /**
      * 发布一个消息, 发布的消息类型必须要与 advertise 创建是指定的模板参数一致.
      */
@@ -314,9 +326,10 @@ target_link_libraries(talker ${catkin_LIBRARIES})
 add_dependencies(talker beginner_tutorials_generate_messages_cpp)
 ```
 
-上述配置中  add_dependencies 告诉 cmake 需要先编译完目标 beginner_tutorials_generate_messages_cpp 后才能编译 `talker` 节点, 其中 `beginner_tutorials_generate_messages_cpp` 为 catkin 自动生成的用于消息定义文件和服务定义文件对应的相关头文件.
+上述配置中 add_dependencies 告诉 cmake 需要先编译完目标 beginner_tutorials_generate_messages_cpp 后才能编译 `talker` 节点, 其中 `beginner_tutorials_generate_messages_cpp` 为 catkin 自动生成的用于消息定义文件和服务定义文件对应的相关头文件.
 
 然后就可以通过 `catkin_make` 命令编译 `talker` 节点了
+
 ```shell
 roscd beginner_tutorials
 cd ../../
@@ -327,7 +340,8 @@ catkin_make
 
 ## ros 节点订阅消息
 
-这一小节, 我们将会编写一个ros 节点实现对 ros 主题的订阅, 在 `beginner_tutorials` 的 `src` 目录小创建一个 `listener.cpp` 文件, 并在文件内输入入校的代码
+这一小节, 我们将会编写一个 ros 节点实现对 ros 主题的订阅, 在 `beginner_tutorials` 的 `src` 目录小创建一个 `listener.cpp` 文件, 并在文件内输入入校的代码
+
 ```cpp
 #include <ros/ros.h>
 #include <std_msgs/String.h>
@@ -364,7 +378,7 @@ int main(int argc, char **argv) {
   ros::Subscriber sub = handle.subscribe("chatter", 1000, chatterCallback);
   /**
    * 进入ros的消息循环
-   * 
+   *
    * ros 消息循环将会处理各种消息回调, 当没有任何回调消息循环将会阻塞, 因此不会
    * 大量占用cpu. 消息循环会一直运行知道 ros::ok 返回 false, 也就是是说下列条件
    * 中的一个或多个达成
@@ -372,7 +386,7 @@ int main(int argc, char **argv) {
    * 2. 应用程序调用了 ros::shutdown 方法
    * 3. 所有的 NodeHandle 实例都被销毁了
    * 4. 另一个同名的节点启动了
-   * 
+   *
    * 需要注意的是它不会处理自定义队列中的回调.
    */
   ros::spin();
@@ -393,8 +407,9 @@ add_dependencies(listener beginner_tutorials_generate_messages_cpp)
 ## 运行 talker 和 listener 节点
 
 首先运行 talker 节点,其结果如下所示
+
 ```shell
-hybtalented@hybtaletented-163-com:~/study$ rosrun beginner_tutorials talker 
+hybtalented@hybtaletented-163-com:~/study$ rosrun beginner_tutorials talker
 [ INFO] [1641906339.355230121]: publishing hello world 0
 [ INFO] [1641906339.455316689]: publishing hello world 1
 [ INFO] [1641906339.555276639]: publishing hello world 2
@@ -421,8 +436,9 @@ hybtalented@hybtaletented-163-com:~/study$ rosrun beginner_tutorials talker
 ```
 
 这时需要在终端内加载对应工作空间的环境配置脚本
+
 ```shell
-source ~/rpi-tools/ros_study/catkin_ws/devel/setup.sh 
+source ~/rpi-tools/ros_study/catkin_ws/devel/setup.sh
 ```
 
 随后运行 listener 节点
@@ -447,9 +463,12 @@ hybtalented@hybtaletented-163-com:~/study$ rosrun beginner_tutorials listene[ IN
 [ INFO] [1641906345.055791361]: I hear: [hello world 57]
 [ INFO] [1641906345.155701891]: I hear: [hello world 58]
 ```
-# 编写 ros 服务定义文件
 
-ros 服务定义文件用于描述一个服务的请求以及响应, 它的文件结构与消息定义文件类似, 只不过文件中包含了 请求和响应的两种类型定义,两种类型定义之间用 `---`分隔. 
+# ros 服务以及服务的调用的写法
+
+## 编写 ros 服务定义文件
+
+ros 服务定义文件用于描述一个服务的请求以及响应, 它的文件结构与消息定义文件类似, 只不过文件中包含了 请求和响应的两种类型定义,两种类型定义之间用 `---`分隔.
 
 下面我们将编写并编译一个 ros 服务定义文件.
 
@@ -466,9 +485,10 @@ mkdir srv
 roscp rospy_tutorials  AddTwoInts.srv srv/
 ```
 
-`AddTwoInts.srv` 中的内容如下所示. 该服务定义文件中定义了一个请求类型,该类型中包括2个6位整形数 `a`, `b`; 在分隔符`---` 后又定义了一个相应类型为整形的`sum`. 
+`AddTwoInts.srv` 中的内容如下所示. 该服务定义文件中定义了一个请求类型,该类型中包括 2 个 6 位整形数 `a`, `b`; 在分隔符`---` 后又定义了一个相应类型为整形的`sum`.
+
 ```shell
-roscat beginner_tutorials AddTwoInts.srv 
+roscat beginner_tutorials AddTwoInts.srv
 int64 a
 int64 b
 ---
@@ -485,6 +505,7 @@ int64 sum
 然后我需要修改 `beginner_tutorials` 包的 `CMakeLists.txt` 文件中的配置
 
 1. 添加 `message_generation` 依赖
+
 ```cmake
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -506,9 +527,8 @@ add_service_files(
 
 接着我们就可以通过 `rossrv show` 命令查看该服务文件的内容
 
-
 ```
-hybtalented@hybtaletented-163-com:~/rpi-tools/ros_study/catkin_ws/src/beginner_tutorials$ rossrv show beginner_tutorials/AddTwoInts 
+hybtalented@hybtaletented-163-com:~/rpi-tools/ros_study/catkin_ws/src/beginner_tutorials$ rossrv show beginner_tutorials/AddTwoInts
 int64 a
 int64 b
 ---
@@ -525,3 +545,152 @@ cd -
 ```
 
 自动生成的服务源代码存放在 `devel` 目录下, 其中 c++ 头文件生成在 `devel/include/beginner_tutorials/`, python 脚本文件创建在 `devel/lib/python2.7/dist-packages/beginner_tutorials/srv` 目录下, lisp 文件创建在 `devel/share/common-lisp/ros/beginner_tutorials/srv` 目录下, nodejs 源代码文件创建在 `devel/share/gennodejs/ros/beginner_tutorials/srv` 目录下.
+
+## ros 服务的编写
+
+首先进入 `beginner_tutorials` 的根目录, 并去确认上一小节创建的 `AddTwoInts.srv` 服务定义文件的内容
+
+```shell
+hybtalented@hybtaletented-163-com:~/rpi-tools/ros_study/catkin_ws/src/beginner_tutorials$ roscd beginner_tutorials/
+hybtalented@hybtaletented-163-com:~/rpi-tools/ros_study/catkin_ws/src/beginner_tutorials$ roscat beginner_tutorials AddTwoInts.srv
+int64 a
+int64 b
+---
+int64 sum
+```
+
+在 `src` 目录下创建 `add_two_ints_server.cpp ` 文件, 并输入如下内容
+
+```cpp
+#include <beginner_tutorials/AddTwoInts.h>
+#include <ros/ros.h>
+/**
+ * @brief 服务处理函数, sum = a + b
+ * @param req 请求参数
+ * @param res 返回参数
+ *
+ * @returns 服务需要返回 true 通知服务调用成功
+ */
+bool add(beginner_tutorials::AddTwoIntsRequest &req,
+         beginner_tutorials::AddTwoIntsResponse &res) {
+  res.sum = req.a + req.b;
+  ROS_INFO("add_two_ints: %ld + %ld, response %ld", req.a, req.b, res.sum);
+  return true;
+}
+
+int main(int argc, char **argv) {
+  // 初始化 ros 节点
+  ros::init(argc, argv, "add_two_ints_server");
+  // 创建一个 ros 节点句柄
+  ros::NodeHandle handle;
+  /**
+   * 创建一个服务提供者对象
+   *
+   * 通过 NodeHandle::advertiseService 向 ros 的 master 节点 注册一个 名称为 add_two_ints 的 服务,
+   * add 函数作为服务的处理函数. advertiseService 返回一个 服务提供者实例, 在所有服务提供者实例及其拷贝
+   * 被销毁后, 相应的服务将会从 ros master 中注销.
+   */
+  ros::ServiceServer server = handle.advertiseService("add_two_ints", add);
+
+  ROS_INFO("ready to serve add_two_ints service");
+  // 进入 ros 的消息循环
+  ros::spin();
+  return 0;
+}
+```
+
+然后在 `beginner_tutorials` 的 `CMakeLists.txt` 文件中添加如下内容, 将 `add_two_ints_server` 节点加入到生成目标中
+
+```cmake
+add_executable(add_two_ints_server src/add_two_ints_server.cpp)
+target_link_libraries(add_two_ints_server ${catkin_LIBRARIES})
+add_dependencies(add_two_ints_server beginner_tutorials_generate_messages_cpp)
+```
+
+执行 `catkin_make` 后接口完成服务提供者节点 `add_two_ints_server` 的生成.
+
+## ros 服务的调用
+
+在这个小节, 我们将创建一个 ros 服务调用的客户端. 首先, 在 `beginner_tutorials` 的 `src` 目录下创建一个 `add_two_ints_client.cpp` 作为 `add_two_ints_client` 节点的源文件, 在 `add_two_ints_client` 节点内将会创建一个 `add_two_ints` 服务的客户端并调用相应的服务, 在 `add_two_ints_client.cpp` 键入如下内容
+
+```cpp
+#include <beginner_tutorials/AddTwoInts.h>
+#include <ros/ros.h>
+
+#include <cstdlib>
+int main(int argc, char **argv) {
+  /**
+   * 初始化 ros 节点
+   */
+  ros::init(argc, argv, "add_two_ints_client");
+  /**
+   * 创建 ros 节点句柄
+   */
+  ros::NodeHandle handle;
+
+  /**
+   * 创建 ros 客户端
+   *
+   * 创建一个客户端用于调用 add_two_ints 服务,
+   * 可以指定第二个参数以提高服务的调用效率, 以及第三个参数
+   * 指定请求连接的连接握手时的请求头.
+   *
+   * serviceClient 方法返回一个服务调用客户端, 通过该客户端可以调用服务.
+   */
+  ros::ServiceClient client =
+      handle.serviceClient<beginner_tutorials::AddTwoInts>("add_two_ints");
+  /**
+   * 创建一个服务对象, 用于传递请求以及获取返回值
+   */
+  beginner_tutorials::AddTwoInts srv;
+  srv.request.a = atoll(argv[1]);
+  srv.request.b = atoll(argv[2]);
+  if (client.call(srv)) {
+    // 服务调用成功
+    ROS_INFO("sum is %ld", srv.response.sum);
+    return 0;
+  } else {
+    // 服务调用失败
+    ROS_ERROR("Failed to call service add_two_ints");
+    return -1;
+  }
+}
+```
+
+然后打开 `beginner_tutorials` 的 `CMakeLists.txt` 文件, 并添加如下代码
+
+```cmake
+add_executable(add_two_ints_client src/add_two_ints_client.cpp)
+target_link_libraries(add_two_ints_client ${catkin_LIBRARIES})
+add_dependencies(add_two_ints_client beginner_tutorials_generate_messages_cpp)
+```
+
+最后执行 `catkin_make` 命令即可完成 `add_two_ints_client` 节点的编译.
+
+## ros 服务的服务端和客户端的测试
+
+首先运行 `add_two_ints_server` 节点后, 在执行两次
+`add_two_ints_client` 节点, 在客户端节点得到如下所示的输出
+
+```shell
+hybtalented@hybtaletented-163-com:~/study$ rosrun beginner_tutorials add_two_ints_client 1 2
+[ INFO] [1642088485.536044577]: sum is 3
+hybtalented@hybtaletented-163-com:~/study$ rosrun beginner_tutorials add_two_ints_client 20 23
+[ INFO] [1642088496.718600770]: sum is 43
+```
+
+而在服务端节点的输出为
+
+```shell
+rosrun beginner_tutorials add_two_ints_server 
+[ INFO] [1642088478.801954731]: ready to serve add_two_ints service
+[ INFO] [1642088485.535826215]: add_two_ints: 1 + 2, response 3
+[ INFO] [1642088496.718394770]: add_two_ints: 20 + 23, response 43
+```
+
+而如果在启动 `add_two_ints_client` 节点时, `add_two_ints_server` 节点还未启动, 则会得到一条报错信息.
+
+```shell
+hybtalented@hybtaletented-163-com:~/study$ rosrun beginner_tutorials add_two_ints_client 20 23
+[ERROR] [1642088743.477537802]: Failed to call service add_two_ints
+```
