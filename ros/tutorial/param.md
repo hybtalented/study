@@ -44,7 +44,11 @@ rosparam dump turtlesim_params.yaml turtlesim
 ```yaml
 {background_b: 150, background_g: 100, background_r: 200}
 ```
-如果在调用 `rosparam dump` 不设置命名空间，得到的 `full_params.yaml` 文件如下所示
+如果在调用 `rosparam dump` 不设置命名空间，
+```shell
+rosparam dump full_params.yaml
+```
+可以得到完成的ros参数, 并被保存到 `full_params.yaml` 文件中, 如下所示
 ```yaml
 rosdistro: 'melodic
 

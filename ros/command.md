@@ -51,6 +51,13 @@ echo $ROS_PACKAGE_PATH
 - **rosmsg package [packageName]** 列出包使用的消息
 - **rosmsg packages** 列出所有包含消息的包
 
+# rosbag -- ros 消息记录和播放
+
+- **rosbag record [...topics]** 记录指定主题的消息到指定的消息记录文件, 可以通过 `-O` 选项指定输出的消息记录文件的文件名
+- **rosbag record -a** 记录所有的ros消息
+- **rosbag info [fileName]** 输出ros消息记录文件的详情
+- **rosbag play [...files]** 顺序播放指定消息记录文件中的消息, 可以通过 `-r` 指定播放速率, `-s` 选项在播放消息记录文件指定时间后的消息, `-d` 选项控制延时指定时间后播放消息, `--topics` 指定播放的消息主题.
+
 # rosservice -- ros 服务相关操作
 
 - **rosservice list** 列出所有的 ros 服务
