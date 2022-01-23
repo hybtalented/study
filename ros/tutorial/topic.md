@@ -209,7 +209,7 @@ float32 angular_velocity
 
 `rosbag` 可以对ros消息进行录制和播放.
 
-## ros 消息的录制
+## 录制 ros 消息记录文件
 
 首先启动 `roscore` 以及 `turtlesim_node` 和 `turtle_teleop_key` 两个节点
 
@@ -287,5 +287,65 @@ topics:      /rosout                    4 msgs    : rosgraph_msgs/Log   (2 conne
              /turtle1/pose           1503 msgs    : turtlesim/Pose
 ```
 包括记录消息的时长, 开始时间和结束时间, 记录消息数, 消息类型以及各个主题的发布消息数量.
+
+如果只想要录制指定主题的ros消息, 可以在 `rosbag recode` 后面指定需要录制的主题列表即可
+
+```shell
+hybtalented@hybtaletented-163-com:~/bagfiles$ rosbag record -O subset /turtle1/cmd_vel /turtle1/pose
+[ INFO] [1642830708.295599754]: Subscribing to /turtle1/cmd_vel
+[ INFO] [1642830708.322068287]: Subscribing to /turtle1/pose
+[ INFO] [1642830708.327983800]: Recording to 'subset.bag'.
+```
+
+在上述命令中, 我们通过 `-O subset` 指定了输出文件名为 `subset.bag`, 并指定了只录制 `/turtle1/cmd_vel` 和 `/turtle1/pose` 主题的消息. 
+
+现在, 我们再次通过 `rosbag info` 命令确认 `subset.bag` 文件的内容, 如下所示
+
+```shell
+hybtalented@hybtaletented-163-com:~/bagfiles$ rosbag info subset.bag 
+path:        subset.bag
+version:     2.0
+duration:    16.7s
+start:       Jan 22 2022 13:51:48.56 (1642830708.56)
+end:         Jan 22 2022 13:52:05.27 (1642830725.27)
+size:        91.4 KB
+messages:    1096
+compression: none [1/1 chunks]
+types:       geometry_msgs/Twist [9f195f881246fdfa2798d1d3eebca84a]
+             turtlesim/Pose      [863b248d5016ca62ea2e895ae5265cf9]
+topics:      /turtle1/cmd_vel     52 msgs    : geometry_msgs/Twist
+             /turtle1/pose      1044 msgs    : turtlesim/Pose
+```
+
+## 播放 ros 消息记录文件
+
+在这一小节, 我们将在上一小节的基础上, 播放录制好的 ros 消息, 即将 消息文件 中录制的消息发布到 ros 系统中.
+
+首先, 我们先关闭 `turtle_teleop_key` 节点, 并重启 `turtlesim_node` 节点, 因为现在我们将会使用录制好的消息控制乌龟的移动. 然后通过 `rosbag play` 命令再次播放录制好的消息
+
+```shell
+hybtalented@hybtaletented-163-com:~/bagfiles$ rosbag play subset.bag
+[ INFO] [1642831187.733840101]: Opening subset.bag
+
+Waiting 0.2 seconds after advertising topics... done.
+
+Hit space to toggle paused, or 's' to step.
+ [RUNNING]  Bag Time: 1642830725.241188   Duration: 16.679454 / 16.711702                
+Done.
+```
+
+可以看到乌龟将会自动开始移动, 然而, 我们看到的乌龟运动的轨迹可能会轻微偏移我们原先录制时的轨迹, 这是因为乌龟的运动对收到消息的时间比较敏感, 而 `rosbag` 无法完美的模拟录制时的消息发布时间, 就会导致乌龟运动的速度和方向发生改变. 
+
+在 `rosbag play` 运行后默认会等待 0.2 秒才开始发布消息, 这个是为了让消息的订阅者知道对应主题的消息已经发布了, 并等待消息订阅者建立一条连接接受消息. 如果不做任何的等待, 消息订阅者可能无法收到一开始的部分消息. 我们可以在 `rosbag play` 时指定 `-d` 选项指定这个等待的时间. 此外, 我们还可以指定 `-s` 选项指定 `rosbag play` 播放时从录制文件的指定时间点开始播放, 而不是从头开始播放; 还可以通过 `-r` 选项控制消息的发布速率, 例如, 指定 `-r 2` 选项可以让消息以两倍的速率发布, 从而播放的时间也会缩短到原先的 1/2.
+
+## 读取 ros 消息记录文件
+
+首先, 我们需要准备好一个消息记录文件, 在这里我们将以 [https://open-source-webviz-ui.s3.amazonaws.com/demo.bag](https://open-source-webviz-ui.s3.amazonaws.com/demo.bag) 中的消息记录文件为例.
+
+```shell
+wget https://open-source-webviz-ui.s3.amazonaws.com/demo.bag
+```
+
+
 
 
