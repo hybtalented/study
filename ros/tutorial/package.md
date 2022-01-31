@@ -693,3 +693,83 @@ rosrun beginner_tutorials add_two_ints_server
 hybtalented@hybtaletented-163-com:~/study$ rosrun beginner_tutorials add_two_ints_client 20 23
 [ERROR] [1642088743.477537802]: Failed to call service add_two_ints
 ```
+
+# roswtf 的使用
+roswtf 可以用于检测ros系统或者ros包中的错误.
+
+首先, 我们先关闭 `roscore`, 然后进入 `beginner_tutorials` 包的根目录, 并执行 `roswtf` 可以得到如下所示的命令行输出
+```
+hybtalented@hybtaletented-163-com:~/rpi-tools/ros_study/catkin_ws/src/beginner_tutorials$ roswtf
+Loaded plugin tf.tfwtf
+Package: beginner_tutorials
+================================================================================
+Static checks summary:
+
+No errors or warnings
+================================================================================
+
+ROS Master does not appear to be running.
+Online graph checks will not be run.
+ROS_MASTER_URI is [http://localhost:11311]
+```
+
+然后, 我们退出 `beginer_tutorials` 并启动 `roscore` 节点, 然后执行 `roswft` 可以得到如下所示的输出
+
+```shell
+hybtalented@hybtaletented-163-com:~/rpi-tools/ros_study/catkin_ws/src/beginner_tutorials$ roscd 
+hybtalented@hybtaletented-163-com:~/rpi-tools/ros_study/catkin_ws/devel$ roswtf
+Loaded plugin tf.tfwtf
+No package or stack in the current directory
+================================================================================
+Static checks summary:
+
+No errors or warnings
+================================================================================
+Beginning tests of your ROS graph. These may take a while...
+analyzing graph...
+... done analyzing graph
+running graph rules...
+... done running graph rules
+
+Online checks summary:
+
+Found 1 warning(s).
+Warnings are things that may be just fine, but are sometimes at fault
+
+WARNING The following node subscriptions are unconnected:
+ * /rosout:
+   * /rosout
+```
+
+最后, 我们将对 `roswtf` 的输出结果进行分析, 通过 `roscd` 命令进入 `rosmaster` 包的根目录, 然后执行｀roswtf` 得到如下结果
+```shell
+hybtalented@hybtaletented-163-com:~/study/ros/tutorial/temporary$ roscd rosmaster
+hybtalented@hybtaletented-163-com:/opt/ros/melodic/share/rosmaster$ roswtf
+Loaded plugin tf.tfwtf
+Package: rosmaster
+================================================================================
+Static checks summary:
+
+No errors or warnings
+================================================================================
+Beginning tests of your ROS graph. These may take a while...
+analyzing graph...
+... done analyzing graph
+running graph rules...
+... done running graph rules
+
+Online checks summary:
+
+Found 1 warning(s).
+Warnings are things that may be just fine, but are sometimes at fault
+
+WARNING The following node subscriptions are unconnected:
+ * /rosout:
+   * /rosout
+```
+上述的 `roswtf` 输出中
+1. Package: rosmaster: 如果当前所在目录在`ROS_PACKAGE_PATH` 环境变量指定的工作空间的一个包中, 告诉我们当前所在目录对应的包的名称. 
+
+2. Static checks summary: 这段输出告诉我们对应的包中以及 ros 系统中没有任何静态的错误. 其中静态的错误主要包括文件系统以及一些非运行时的问题.
+
+3. Online checks summary: 告诉我们检测整个ros 系统中的运行时错误, 在这段输出中告诉我们 `rosmaster` 的 `/rosout` 主题没有任何订阅者.
