@@ -343,9 +343,205 @@ Done.
 首先, 我们需要准备好一个消息记录文件, 在这里我们将以 [https://open-source-webviz-ui.s3.amazonaws.com/demo.bag](https://open-source-webviz-ui.s3.amazonaws.com/demo.bag) 中的消息记录文件为例.
 
 ```shell
-wget https://open-source-webviz-ui.s3.amazonaws.com/demo.bag
+wget -c -t 0 https://open-source-webviz-ui.s3.amazonaws.com/demo.bag
 ```
 
+`demo.bag` 大约有 700M 左右, 完成下载以后, 可以通过 `rosbag info` 查看里面的内容如下所示
 
+```shell
+hybtalented@hybtaletented-163-com:~/bagfiles$ rosbag info demo.bag 
+path:        demo.bag
+version:     2.0
+duration:    20.0s
+start:       Mar 22 2017 10:37:58.00 (1490150278.00)
+end:         Mar 22 2017 10:38:17.00 (1490150298.00)
+size:        696.2 MB
+messages:    5390
+compression: none [600/600 chunks]
+types:       bond/Status                      [eacc84bf5d65b6777d4c50f463dfb9c8]
+             diagnostic_msgs/DiagnosticArray  [60810da900de1dd6ddd437c3503511da]
+             diagnostic_msgs/DiagnosticStatus [d0ce08bc6e5ba34c7754f563a9cabaf1]
+             nav_msgs/Odometry                [cd5e73d190d741a2f92e81eda573aca7]
+             radar_driver/RadarTracks         [6a2de2f790cb8bb0e149d45d297462f8]
+             sensor_msgs/Image                [060021388200f6f0f447d0fcd9c64743]
+             sensor_msgs/NavSatFix            [2d3a8cd499b9b4a0249fb98fd05cfa48]
+             sensor_msgs/PointCloud2          [1158d486dd51d683ce2f1be655c3c181]
+             sensor_msgs/Range                [c005c34273dc426c67a020a87bc24148]
+             sensor_msgs/TimeReference        [fded64a0265108ba86c3d38fb11c0c16]
+             tf2_msgs/TFMessage               [94810edda583a504dfda3829e70d7eec]
+             velodyne_msgs/VelodyneScan       [50804fc9533a0e579e6322c04ae70566]
+topics:      /diagnostics                      140 msgs    : diagnostic_msgs/DiagnosticArray 
+             /diagnostics_agg                   40 msgs    : diagnostic_msgs/DiagnosticArray 
+             /diagnostics_toplevel_state        40 msgs    : diagnostic_msgs/DiagnosticStatus
+             /gps/fix                          146 msgs    : sensor_msgs/NavSatFix           
+             /gps/rtkfix                       200 msgs    : nav_msgs/Odometry               
+             /gps/time                         192 msgs    : sensor_msgs/TimeReference       
+             /image_raw                        600 msgs    : sensor_msgs/Image               
+             /obs1/gps/fix                      30 msgs    : sensor_msgs/NavSatFix           
+             /obs1/gps/rtkfix                  200 msgs    : nav_msgs/Odometry               
+             /obs1/gps/time                    136 msgs    : sensor_msgs/TimeReference       
+             /radar/points                     400 msgs    : sensor_msgs/PointCloud2         
+             /radar/range                      400 msgs    : sensor_msgs/Range               
+             /radar/tracks                     400 msgs    : radar_driver/RadarTracks        
+             /tf                              1986 msgs    : tf2_msgs/TFMessage              
+             /velodyne_nodelet_manager/bond     80 msgs    : bond/Status                     
+             /velodyne_packets                 200 msgs    : velodyne_msgs/VelodyneScan      
+             /velodyne_points                  200 msgs    : sensor_msgs/PointCloud2
+```
 
+可以发现记录文件中有 30条 `/obs1/gps/fix` 主题的消息, 有 40 条 `/diagnostics_agg` 主题的消息, 下面我们将介绍分别使用 `rostopic echo` 和 `ros_readbagfile` 两种方式读取两个主题的消息. 这两种读取消息的方式的主要区别包括:
+1. `rostopic echo` 相对于 `ros_readbagfile` 来说速度非常慢, `ros_readbagfile` 大约是 `rostopic echo` 的读取速度的 7 倍.
+2. `rostopic echo` 一次只能读取一个主题的消息, 而 `ros_readbagfile` 可以读取任意数量主题的消息.
+3. `rostopic echo` 读取消息需要启动`roscore`, 而 `ros_readbagfile` 可以直接读取消息记录文件.
 
+### 通过 rostopic echo 读取消息
+
+首先启动 `roscore`, 然后启动另外两个终端分别通过 `rostopic echo` 导出  `/obs1/gps/fix` 和 `/diagnostics_agg` 主题的消息, 并保存成相应的 yaml 文件,
+```shell
+# 终端 1
+roscore
+
+# 终端 2
+rostopic echo /obs1/gps/fix | tee obs1_gps_fix.yaml
+
+# 终端 3
+rostopic echo /diagnostics_agg | tee diagnostics_agg.yaml
+```
+
+最后在另外一个终端中 通过 `rosbag play` 播放 `demo.bag` 文件, 如下所示
+
+```shell
+hybtalented@hybtaletented-163-com:~/bagfiles$ time rosbag play --immediate demo.bag --topics /obs1/gps/fix /diagnostics_agg
+[ INFO] [1643378223.508929064]: Opening demo.bag
+
+Waiting 0.2 seconds after advertising topics... done.
+
+Hit space to toggle paused, or 's' to step.
+ [RUNNING]  Bag Time: 1490150297.770734   Duration: 19.703405 / 19.703405               
+Done.
+
+real    0m3.556s
+user    0m0.328s
+sys     0m0.203s
+```
+这是在对应的终端中以及相应的 yaml 文件中可以看到 yaml 格式的消息, 消息直接通过 `---` 隔开, 如下所示是 `obs1_gps_fix.yaml` 的一部分内容
+
+```yaml
+header: 
+  seq: 3999
+  stamp: 
+    secs: 1490150279
+    nsecs: 743694124
+  frame_id: "gps"
+status: 
+  status: 0
+  service: 1
+latitude: 37.4008594338
+longitude: -122.107878395
+altitude: -6.0492913357
+position_covariance: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+position_covariance_type: 0
+---
+header: 
+  seq: 4000
+  stamp: 
+    secs: 1490150281
+    nsecs:  66032410
+  frame_id: "gps"
+status: 
+  status: 0
+  service: 1
+latitude: 37.4008724365
+longitude: -122.107910241
+altitude: -6.14479586253
+position_covariance: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+position_covariance_type: 0
+---
+```
+
+### 通过 `ros_readbagfile` 脚本读取消息
+
+为了使用 `ros_readbagfile` 脚本，　我们首先要通过如下过程下载和安装脚本
+
+```shell
+# 创建并进入用户用户可执行目录
+mkdir -p ~/bin && cd ~/bin
+
+# 下载　ros_readbagfile　脚本文件
+wget https://raw.githubusercontent.com/ElectricRCAircraftGuy/eRCaGuy_dotfiles/master/useful_scripts/ros_readbagfile.py
+
+#　重命名脚本文件，　并添加可执行权限
+chmod +x ros_readbagfile.py && mv ros_readbagfile.py ros_readbagfile
+
+# 将　~/bin 添加到环境变量　PATH 中　
+. .profile
+
+# 参考　ros_readbagfile 脚本中的相关注释，安装相关依赖
+pip3 install bagpy
+```
+然后我们通过 `ros_readbagfile` 命令去读取消息记录文件中的消息,
+
+```shell
+time ros_readbagfile ~/bagfiles/demo.bag /obs1/gps/fix /diagnostics_agg | tee topics.yaml
+```
+
+上述命令将 `demo.bag` 中的 `/obs1/gps/fix` 和 `/diagnostics_agg` 主题的消息导出, 并记录 `topics.yaml` 文件中.
+
+### 分析导出的 yaml 消息文件
+
+下面将会介绍如何分析通过上述两种凡是导出的 yaml 消息文件.
+
+首先我们需要安装 `ripgrep`, 在大于等于 18.10 版本的 ubuntu 系统中可以通过如下命令安装
+```shell
+sudo apt update && sudo apt install ripgrep
+```
+在较低版本的 ubuntu 系统上可以通过如下命令安装
+
+```shell
+curl -LO https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep_13.0.0_amd64.deb
+sudo dpkg -i ripgrep_13.0.0_amd64.deb
+```
+在其他的linux 发行版中的安装可以参考 [ripgrep 的安装](https://github.com/BurntSushi/ripgrep#installation)
+`ripgrep` 类似与 `grep` 命令, 却在速度上得到了大量的提升. 如果不想使用 `ripgrep` 可以将下述命令中的所有 `rg` 命令替换为 `grep`.
+
+下面我们将对 `topics.yaml` 消息文件进行分析
+
+1. 查找所有 key 入口以 `piksi_` 开头的行, 然后进行排序, 并剔除掉重复项
+```shell
+hybtalented@hybtaletented-163-com:~/study/ros/tutorial/temporary$ time rg 'key: "piksi_' topics.yaml | sort -V | awk '!seen[$0]++'
+        key: "piksi_llh_diag: Frequency Status"
+        key: "piksi_rtk_diag: Frequency Status"
+        key: "piksi_rtk_diag: Piksi Status"
+        key: "piksi_time_diag: Frequency Status"
+
+real    0m0.016s
+user    0m0.014s
+sys     0m0.011s
+```
+2. 查找所有 key 为 `GPS` 或者 `Duration` 或者 `Minimum` 的行, 并排序和去重
+```shell
+hybtalented@hybtaletented-163-com:~/study/ros/tutorial/temporary$ time rg '(key: "GPS|key: "Duration|key: "Minimum)' topics.yaml | sort -V | awk '!seen[$0]++'
+        key: "Duration of window (s)"
+        key: "GPS RTK height difference (m)"
+        key: "GPS RTK horizontal accuracy (m)"
+        key: "GPS RTK meters east"
+        key: "GPS RTK meters north"
+        key: "GPS RTK orientation east"
+        key: "GPS RTK orientation north"
+        key: "GPS RTK orientation up"
+        key: "GPS RTK solution status (4 = good)"
+        key: "GPS RTK velocity east"
+        key: "GPS RTK velocity flags"
+        key: "GPS RTK velocity north"
+        key: "GPS RTK velocity up"
+        key: "GPS altitude"
+        key: "GPS latitude"
+        key: "GPS lat/lon horizontal accuracy (m)"
+        key: "GPS lat/lon solution status"
+        key: "GPS longitude"
+        key: "Minimum acceptable frequency (Hz)"
+
+real    0m0.024s
+user    0m0.013s
+sys     0m0.020s
+```

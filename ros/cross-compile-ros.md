@@ -23,7 +23,7 @@ rsync -avz --rsync-path="sudo rsync" --delete pi@$IP_ADDRESS:/opt/vc $SYSROOT_DI
 ```shell
 sudo apt-get install python-rosdep python-rosinstall-generator python-vcstool python-rosinstall build-essential
 sudo rosdep init
-sudo rosdep update
+rosdep update
 ```
 
 在进行 rosdep 初始化时，可能会由于网络问题报错，这时建议使用 proxychain4 进行代理（代理服务器配置请参考 https://monkeywie.cn/2020/07/06/linux-global-proxy-tool-proxychain/）。
