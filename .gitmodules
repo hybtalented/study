@@ -1,0 +1,3 @@
+[submodule "3d/webgl"]
+	path = 3d/webgl
+	url = https://github.com/hybtalented/webgl.git
