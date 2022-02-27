@@ -111,7 +111,7 @@ roscore&
 # 启动 rviz
 rosrun rviz rviz
 ```
-然后在另外一个终端启动 `rosnode`
+然后在另外一个终端启动 `basic_shape_node` 节点
 ```shell
 # 终端 1
 # 加载环境变量
@@ -218,3 +218,134 @@ target_link_libraries(points_and_lines
 
 然后跟上一小节类似, 启动 `rviz` 和 `points_and_lines` 节点, 配置好固定框架并添加好 `Marker`视图内容后, 可以在 `rviz` 的图形预览面板中看到如下的内容
 ![基本图形配置](./images/points_and_lines.png)
+
+# rviz 交互服务器编写
+
+rviz 中的图形可以通过交互服务器进行控制, 用户可以通过控制改变可交互的图形的位置与旋转, 也可以点击相应的图形进行选择或者弹出菜单. 这些可交互的图形通过`visualization_msgs/InteractiveMarker` 主题的消息传送到 rviz 中, 一个可交互的图形包括若干个基本图形(`visualization_msgs/Marker`), 一个右键菜单, 以及若干个控制器(`visualization_msgs/InteractiveMarkerControl`), 并且通过一个回调函数处理控制消息. 如下图所示
+![可交互图形的结构](./images/interactive_marker_structure.png)
+
+可交互图形需要在一个节点上创建一个 `InteractiveMarkerServer` 对象, 用于建立和 rviz 的连接, 这个连接用于将改变被传输到 rviz, 并将用户与图形的交互通知到该节点.
+![可交互图形的结构](./images/interactive_marker_architecture.png)
+
+## 基本交互服务器的编写
+
+在这一小节我们将实现一个简单的交互服务器.
+
+首先创建一个 c++ 源文件 **simple_interactive_marker.cpp**, 并在文件中输入如下代码, 在代码中创建了一个基本的可交互图形, 并实现了图形的交互控制.
+
+```cpp
+#include <interactive_markers/interactive_marker_server.h>
+#include <ros/ros.h>
+
+/**
+ * @brief  用户交互处理函数
+ * @param feedback 交互的具体内容
+ * 
+ * 这个处理函数仅仅打印了图形的当前位置
+ */
+void processFeedback(
+    const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback) {
+  geometry_msgs::Point position = feedback->pose.position;
+  ROS_INFO_STREAM(feedback->marker_name << "is now at (" << position.x << ","
+                                        << position.y << "," << position.z
+                                        << ")");
+}
+
+int main(int argc, char *argv[]) {
+  ros::init(argc, argv, "simple_interactive_marker");
+  ros::NodeHandle handle;
+
+  // 在命名空间 simple_marker 上创建一个交互服务器
+  interactive_markers::InteractiveMarkerServer server("simple_marker");
+
+  // 创建一个可交互的图形
+  visualization_msgs::InteractiveMarker int_marker;
+
+  // 设置图形的框架和时间戳
+  int_marker.header.frame_id = "base_link";
+  int_marker.header.stamp = ros::Time::now();
+
+  // 设置图形的名称以及描述
+  int_marker.name = "my_marker";
+  int_marker.description = "simple 1-DOF Control";
+
+  // 创建一个灰色的基本盒子
+  visualization_msgs::Marker box_marker;
+  box_marker.type = visualization_msgs::Marker::CUBE;
+  box_marker.scale.x = 0.45;
+  box_marker.scale.y = 0.45;
+  box_marker.scale.z = 0.45;
+  box_marker.color.r = 0.5;
+  box_marker.color.g = 0.5;
+  box_marker.color.b = 0.5;
+  box_marker.color.a = 1.0;
+
+  // 创建一个不可交互的控制器, 用于放置盒子
+  visualization_msgs::InteractiveMarkerControl box_control;
+  box_control.always_visible = true;
+  box_control.markers.push_back(box_marker);
+
+  // 创建一个控制器用于移动可交互的图形, 这个控制器中不包含任何基本图形, 这会让
+  // rviz 生成一对箭头.
+  visualization_msgs::InteractiveMarkerControl move_control;
+  move_control.name = "move_x";
+  move_control.interaction_mode =
+      visualization_msgs::InteractiveMarkerControl::MOVE_AXIS;
+
+  // 在可交互图形上添加各个控制器
+  int_marker.controls.push_back(box_control);
+  int_marker.controls.push_back(move_control);
+
+  // 将可交互图形放到交互服务器中, 并告诉服务器在与该图形交互时调用
+  // processFeedback
+  server.insert(int_marker, &processFeedback);
+
+  server.applyChanges();
+
+  ros::spin();
+  return 0;
+}
+```
+
+然后修改 cmake 文件
+
+```cmake
+## 使用 visualization_msgs 和 interactive_markers 两个包
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  visualization_msgs
+  interactive_markers
+)
+# 添加构建目标
+add_executable(simple_interactive_marker src/simple_interactive_marker.cpp)
+target_link_libraries(simple_interactive_marker
+  ${catkin_LIBRARIES}
+)
+```
+
+通过 `catkin_make` 完成目标的构建。 下面我们将在 rviz 中添加该图形。
+
+首先启动 `roscore` 和 `rviz`
+
+```shell
+# 终端 2
+# 加载环境变量
+. /opt/ros/melodic/setup.bash
+# 启动 roscore
+roscore&
+# 启动 rviz
+rosrun rviz rviz
+```
+
+然后在启动 `simple_interactive_marker` 节点
+```shell
+# 终端 1
+# 加载环境变量
+. ./devel/setup.bash
+rosrun rviz_tutorials simple_interactive_marker
+```
+
+最后在 rviz 中添加相应的可交互图形, 并按照下图所示进行配置
+![基本可交互图形](./images/simple_interactive_marker.png)
+
+然后点击两个箭头就可对图形进行移动， 并在`simple_interactive_marker` 的命令行窗口中，可以看到图形的当前位置。
