@@ -349,3 +349,208 @@ rosrun rviz_tutorials simple_interactive_marker
 ![基本可交互图形](./images/simple_interactive_marker.png)
 
 然后点击两个箭头就可对图形进行移动， 并在`simple_interactive_marker` 的命令行窗口中，可以看到图形的当前位置。
+
+# rviz 常用的交互控制方式
+
+可以在[这里]()找到这个小节的完整代码。
+
+## 基本的3D控制
+rviz 中最基础的控制方式包括6个自由度的控制器， 以及相对与摄像头平面的 3D 旋转和平移控制。
+
+其中 6 自由度控制器包括旋转控制盘以及平移控制轴，在交互图形上直接添加不包含任何图形的交互控制器。创建一个旋转控制盘只需要将控制器的 `control.interaction_mode`  设置为 `InteractiveMarkerControl::ROTATE_AXIS`，并通过`control.orientation` 设置圆盘的法线方向， 交互图形的旋转可以通过点击对应的圆盘并移动鼠标控制，在圆盘平面内旋转； 创建一个平移控制轴需要设置控制器 `control.interaction_mode`  设置为 `InteractiveMarkerControl::MOVE_AXIS`， 并通过 `control.orientation` 设置轴的指向， 图形的平移可以通过点击对应的轴并移动鼠标，在轴所在的直线上移动。
+```cpp
+InteractiveMarker int_marker;
+InteractiveMarkerControl control;
+control.orientation.w = 1.0;
+control.orientation.x = 1.0;
+control.orientation.y = 0.0;
+control.orientation.z = 0.0;
+control.name = "rotate_x";
+control.interaction_mode = InteractiveMarkerControl::ROTATE_AXIS;
+int_marker.controls.push_back(control);
+control.name = "move_x";
+control.interaction_mode = InteractiveMarkerControl::MOVE_AXIS;
+int_marker.controls.push_back(control);
+```
+对于6自由度的控制器， 可以设置其方向模式为固定方向模式，如下所示
+
+```shell
+control.orientation_mode = InteractiveMarkerControl::FIXED;
+```
+ 如过方向模式为固定方向模式， `control.orientation`的方向将相对于交互图形所绑定的框架， 而默认的方向模式， `control.orientation` 所指定的方向相对于图形自身的框架。
+
+ 相对与摄像头平面的 3D 旋转和平移控制可以通过在控制器内添加一个或多个基本图形，并设置盒子控制器的 `interaction_mode` 为 `InteractiveMarkerControl::MOVE_3D` 、
+   `InteractiveMarkerControl::ROTATE_3D`或者
+     `InteractiveMarkerControl::MOVE_ROTATE_3D`。
+ ```cpp
+InteractiveMarkerControl &boxControl = makeBoxControl(int_marker);
+boxControl.interaction_mode = interactive_mode;
+ ```
+其中 `makeBoxControl` 的实现见下面的完整代码。
+
+上述三总3D控制模式的控制方式如下
+
+* `MOVE_3D` - 点击对应的基本图形并移动鼠标，图形将会在摄像机平面内移动到鼠标的位置， 如果上述过程中按住 *SHIFT* 目标图形会在摄像机平面垂直方向上移动。
+* `ROTATE_3D` - 按住基本图形并移动鼠标，将会绕着摄像机平面竖直和水平方向转动， 如果在上述过程中同时按住 `SHIFT` 键， 基本图形将会绕着垂直与摄像机平面的方向转动。
+* `MOVE_ROTATE_3D` - `MOVE_3D` 和 `ROTATE_3D` 的结合， 如果未按下 *CTRL* 键， 运动模式和  `MOVE_3D`一致， 如果按下 *CTRL* 键， 运动模式和 `ROTATE_3D` 一致。
+
+## View Facing 控制模式
+
+View Facing 控制模式基于摄像头平面， 包括一个垂直于摄像头平面的选择控制器，以及可以任意在摄像头平面内运动的平移控制模式
+
+```cpp
+// 创建一个围绕着与摄像头平面垂直的轴的旋转控制器
+control.orientation_mode = InteractiveMarkerControl::VIEW_FACING;
+control.interaction_mode = InteractiveMarkerControl::ROTATE_AXIS;
+control.orientation.w = 1;
+control.name = "rotate";
+
+int_marker.controls.push_back(control);
+// 创建一个盒子，拖动盒子可以在摄像头平面内运动
+control.orientation_mode = InteractiveMarkerControl::VIEW_FACING;
+control.interaction_mode = InteractiveMarkerControl::MOVE_PLANE;
+// 如果设置为 false 盒子将会一直面向摄像机平面
+control.independent_marker_orientation = true;
+control.name = "move";
+
+control.markers.push_back(makeBox(int_marker));
+```
+
+如上所示，旋转控制器可以通过设置 `control.orientation_mode`为`InteractiveMarkerControl::VIEW_FACING;`使其一直面向摄像头平面，同理二维平移控制的方向模式 `orientation_mode` 也需要设置为 `VIEW_FACING`， 使其能够平行于摄像头平面移动。
+
+## 四角直升(Quadrocopter)控制模型
+
+四角直升控制模型包括一个与z轴平行的旋转移动控制器，以及一个z方向的一维移动控制轴。
+
+其中水平旋转控制器需要将方向设置为 z 方向，并将设置`control.interaction_mode` 为 `InteractiveMarkerControl::MOVE_ROTATE`；而垂直移动控制器也需要设置方向为 z 方向， 而它的 `interaction_mode` 设置为 `MOVE_AXIS`， 即一维平移控制。**这种情况下，rviz会自动生成上下两个一维控制轴。**
+```cpp
+control.orientation.x = 0;
+control.orientation.y = 1;
+control.orientation.z = 0;
+control.orientation.w = 1;
+// 创建一个圆环，拖动圆环可以进行在 orientation 垂直的平面内旋转和移动
+control.interaction_mode = InteractiveMarkerControl::MOVE_ROTATE;
+int_marker.controls.push_back(control);
+// 创建一个一维平移移动轴， orientation 为轴的方向
+control.interaction_mode = InteractiveMarkerControl::MOVE_AXIS;
+int_marker.controls.push_back(control);
+```
+
+## 棋盘对齐控制模式
+
+棋盘对齐控制模式可以通过点击环形圈或者目标图形本身对目标图形进行移动，结束控制后，会自动将图形对齐的棋盘网格的中心。
+
+
+```shell
+control.interaction_mode = InteractiveMarkerControl::MOVE_PLANE;
+control.name = "move_plane";
+int_marker.controls.push_back(control);
+
+control.markers.push_back(makeBox(int_marker));
+control.always_visible = true;
+control.name = "box";
+int_marker.controls.push_back(control);
+```
+图形的平面控制器只需要将相应的标记控制器的`interaction_mode` 设置为 `MOVE_PLANE`， 而图形的对齐则是控制控制回调的方式配置， 如下所示，对于该图形我们额外指定了一个反馈回调函数 `alignMarkerFeedback`。
+```cpp
+server.setCallback(int_marker.name, &processCallback);
+server.setCallback(int_marker.name, alignMarkerFeedback,
+                     InteractiveMarkerFeedback::POSE_UPDATE);
+```
+`alignMarkerFeedback` 回调函数的主要作用是在图形的位置更新时，修改图形的坐标使图形对齐到网格，并通知到 rviz. 位置更新回调函数的实现如下
+```cpp
+interactive_markers::InteractiveMarkerServer::FeedbackCallback alignMarkerFeedback = [&](const InteractiveMarkerFeedbackConstPtr &feedback) {
+    geometry_msgs::Pose pose = feedback->pose;
+    pose.position.x = round(pose.position.x - 0.5) + 0.5;
+    pose.position.y = round(pose.position.y - 0.5) + 0.5;
+
+    ROS_INFO_STREAM(
+        feedback->marker_name
+        << ": aligning position =" << feedback->pose.position.x << ","
+        << feedback->pose.position.y << "," << feedback->pose.position.z
+        << " to position " << pose.position.x << "," << pose.position.y
+        << "," << pose.position.z);
+    server.setPose(feedback->marker_name, pose);
+    server.applyChanges();
+};
+```
+
+## 二维数控转台模型
+二维数控转台模型包括一个水平并且方向固定的旋转控制器，以及一个竖直的旋转控制器，可以用于可以左右和上下旋转的炮台或者雷达等。
+
+水平的旋转控制器需要设置其旋转轴方向为 z 方向， 并且设置器方向模式 `orientation_mode` 为 `FIXED`， 竖直的旋转轴则只需要将在旋转轴设置在 X-Y 平面内。
+```cpp
+control.orientation.x = 0;
+control.orientation.y = 0;
+control.orientation.z = 1;
+control.orientation.w = 1;
+
+// 创建一个法向量为 y 方向的倾斜旋转控制器
+control.interaction_mode = InteractiveMarkerControl::ROTATE_AXIS;
+int_marker.controls.push_back(control);
+
+control.orientation.y = 1;
+control.orientation.z = 0;
+// 创建一个垂直于 z 方向并且方向固定的平面旋转控制器
+control.orientation_mode = InteractiveMarkerControl::FIXED;
+int_marker.controls.push_back(control);
+```
+
+## 右键菜单
+
+rviz 中可以通过 `interactive_markers::MenuHandler` 创建一个右键菜单， 下面的代码分别创建一个两个 `First Entry` 和 包含子选项的 `Submenu Entry` 菜单入口， 并在 `Submenu Entry` 菜单下添加一个包含 `First Entry` 的子菜单选项。**insert 函数会返回添加的菜单唯一标识**
+```cpp
+// 菜单创建
+interactive_markers::MenuHandler menu_handler;
+menu_handler.insert("First Entry", &processCallback);
+  // 创建一个包括子选项的菜单
+interactive_markers::MenuHandler::EntryHandle sub_menu_handle =
+    menu_handler.insert("Submenu Entry");
+  // 创建子选项
+menu_handler.insert(sub_menu_handle, "First Entry", &processCallback);
+```
+为了对目标图形上调用该菜单，我们需要添加一个控制器，并设置其交互模式 `interaction_mode` 为 `MENU`。**注意： 如果对应的控制器下不包含基本图形，会自动在交互图形上创建一个浮动的文本图形**
+```cpp
+control.interaction_mode = InteractiveMarkerControl::MENU;
+```
+然后我们还需要将菜单绑定到图形上,
+```cpp
+menu_handler.apply(server, int_marker.name);
+```
+在菜单的相应选项选择时， 我们可以在反馈回调函数中获取到 `InteractiveMarkerFeedback::MENU_SELECT` 事件，可以通过 `feedback->menu_entry_id` 获取到菜单的标识id。
+
+## 按钮
+按钮的创建只需要设置相应图形的交互模式 `interaction_mode` 为 `BUTTON`, 
+```cpp
+control.interaction_mode = InteractiveMarkerControl::BUTTON;
+```
+然后就可以在相应图形点击的后出发 `InteractiveMarkerFeedback::BUTTON_CLICK` 事件。
+
+## 将图形添加到移动的框架中
+在 rviz 中可以存在多个框架，当时同时只能设置一个固定框架， 为了让其他框架中的图形同时能够在固定框架中展示，我们需要设置相应框架到固定框架的坐标转换规则，在 `rviz` 中的坐标转换是基于 `tf` 包， 在 `tf` 中，坐标转换规则可以通过 `tf::TransformBroadcaster` 通知到 ros 系统中， 下面的代码配置了在 z 方向上相对与 `base_link` 运动的框架 `moving_frame` 以及相对于 `base_link` 围绕者 y 轴旋转的框架 `rotating_frame`.
+
+```cpp
+void frameCallback(const ros::TimerEvent &event) {
+  static u_int32_t counter;
+  static tf::TransformBroadcaster br;
+
+  tf::Transform t;
+  ros::Time now = ros::Time::now();
+  // 设置平移框架的坐标转换
+  t.setOrigin(tf::Vector3(0.0, 0.0, 2.0 * sin(counter / 140.0)));
+  t.setRotation(tf::Quaternion(0.0, 0.0, 0.0, 1.0));
+  br.sendTransform(tf::StampedTransform(t, now, "base_link", "moving_frame"));
+  // 设置旋转的框架 rotating_frame 的相对与固定框架的坐标转换
+  t.setOrigin(tf::Vector3(0.0, 0.0, 0.0));
+  t.setRotation(tf::createQuaternionFromRPY(0.0, counter / 140.0, 0.0));
+  br.sendTransform(tf::StampedTransform(t, now, "base_link", "rotating_frame"));
+
+  ++counter;
+}
+```
+
+为了将相应的图形添加到对应的框架中，我们需要设置其 `frame_id` 为相应的框架名称，
+```cpp
+int_marker.header.frame_id = "rotating_frame";
+```
+并且我们还需要将交互图形的 `header` 中的 `stamp` 设置为 `ros::Timer(0)`（默认值），这一 rviz 才会实时刷新图形的位置。
