@@ -554,3 +554,4 @@ void frameCallback(const ros::TimerEvent &event) {
 int_marker.header.frame_id = "rotating_frame";
 ```
 并且我们还需要将交互图形的 `header` 中的 `stamp` 设置为 `ros::Timer(0)`（默认值），这一 rviz 才会实时刷新图形的位置。
+
