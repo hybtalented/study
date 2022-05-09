@@ -42,6 +42,19 @@ xml 标签的属性中可以通过 `${}` 输入一些基本的数学表达式，
 <geometry  x="${radius * cos(theta) * cos(phi)}" y="${radius * cos(theta) * sin(phi)}" z="${radius * sin(theta)}"/>
 ```
 
+# xacro 访问 yml 文件
+前面说过 `xacro` 的 xml属性中的 `${}` 中内容是通过 python 解析的， 因此， `xacro` 也能够使用 python 中的一些类型，例如
+```xml
+<!-- 字典类型 -->
+<xacro:property name="dict_var" value="${dict(a=1, b=2)}"/>
+<xacro:property name="arr_var" value="${[1,2,3}" />
+```
+并且能够将 yaml 文件加载进来
+```xml
+<xacro:propery name="dict_yaml" value="${load_yaml(file.yaml)}" />
+```
+在 yaml 文件被加载后，将被视为一个字典。
+
 # 条件表达式
 在`xacro`中，可以使用 `<xacro:if>` 和 `<xacro:unless>` 两个标签控制xml块的启用和弃用，如下所示
 ```xml
@@ -172,3 +185,54 @@ xacro 中一个重要的特性是可以声明一个宏。宏的定义是通过 `
 ```
 
 在宏中定义的属性和子宏是局部的，只能在对应的该宏中使用，对于宏的外部是不可见的，如果想要在宏中，想外部注入变量，可以在对应的属性的声明是添加`scope` xml 属性。 如果 `scope` 的值被设置为 `parent` 属性将被注入到宏的父作用域；如果 `scope` 的值被设置为 `global`， 属性将被注入到全局作用域。
+
+# 包含其他的 xacro 文件
+
+在 `xacro` 中， 可以通过 `<xacro:include>`将其他的 `xacro` 文件包含进来，
+
+```xml
+<xacro:include filename="other.xacro" />
+<xacro:include filename="$(find pkg)/pkg.xacro" />
+<xacro:include filename="$(cwd)/other.xacro" />
+```
+
+如果包含的文件是相对路径的话，则路径相对于当前的 `xacro` 文件。除此之外， 为了避免包含的文件中的属性和宏的命名冲突，可以在 `<xacro:include>` 标签上添加 `ns` xml 属性，从而可在通过 `ns` 命名空间去访问对应的属性和宏。
+
+```xml
+<xacro:include filename="other.xacro" ns="other" />
+
+<!-- 访问属性 -->
+<foo value="${other.property}" />
+<!-- 访问宏 -->
+<xacro:other.macro />
+```
+**需要注意的是：如果在一个宏中通过<xacro:include>包含其他的 `xacro` 文件， 文件将会在宏调用的时候展开，而不是在宏定义的时候展开。**
+
+# 动态属性和动态标签
+如果你想要通过动态的变量生成一个 xml 标签，或者一个 xml 标签的属性名，可以通过 `<xacro:element>` 和 `<xacro:attribute>` 即可实现
+```xml
+<xacro:element xacro:name="tag_name" [other attribute] />
+<xacro:attirbute name="${attr_name}" value="表达式" />
+```
+例如 
+```xml
+<xacro:property name="test_tag" value="test" />
+<xacro:element xacro:name="${test_tag}" test="1" />
+```
+将会被 `xacro` 展开为
+```xml
+<test test="1" />
+```
+而
+```xml
+<xacro:property name="test_attr" value="test" />
+<tag> 
+    <xacro:attribute name="${test_attr}" value="2">
+</tag>
+```
+将会被 `xacro` 展开为
+```xml
+<tag test="2" />
+```
+
+
