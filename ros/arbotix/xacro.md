@@ -235,4 +235,49 @@ xacro 中一个重要的特性是可以声明一个宏。宏的定义是通过 `
 <tag test="2" />
 ```
 
+# CMakeLists 处理 xacro 文件
+下面为将 xacro 文件添加到 CMake 的构建目标中的示例代码，
 
+```cmake
+find_package(xacro REQUIRED)
+# 如果是通过 catkin_make 进行构建的话，也可以使用一下的代码将 xacro 包含进来
+# find_package(catkin REQUIRED COMPONENTS ... xacro)
+
+# 添加需要被 xacro 编译的xacro文件
+file(GLOB xacro_files ${CMAKE_CURRENT_SOURCE_DIR}/world/*.world.xacro)
+
+foreach(file  ${xacro_files}) 
+    # 剔除 file 文件中的 .xacro 后缀
+    string(REGEX MATCH "(.*)[.]xacro$" unused ${file})
+    # 获取剔除后缀后的文件
+    set(out_file ${CMAKE_MATCH_1})
+
+    # 使用 xacro 的 cmake 宏创建目标
+    xacro_add_xacro_file(${file} ${out_file})
+    
+    # xacro_add_xacro_file 会自动创建一个生成目标，这里将对应的目标添加到一个数组里
+    list(APPEND world_file ${out_file})
+endforeach(file)
+
+# 最后我们将所有的 xacro 构建目标合并为一个目标, 通过该构建目标可以实现所有的 xacro 文件的构建
+add_custom_target(media_files ALL DEPENDS ${world_file})
+```
+事实上，上述的代码有更简单的实现方式
+```cmake
+find_package(xacro REQUIRED)
+file(GLOB xacro_files ${CMAKE_CURRENT_SOURCE_DIR}/world/*.world.xacro)
+
+xacro_add_files(${xacro_files} TARGET media_files)
+```
+上述代码会将 `.xacro` 后缀的文件通过 `xacro` 编译后生成对应的目标 xml 文件，并且 xml 文件的文件名会去除掉 `.xacro` 后缀, 因此, 我们只要根据我们想要生成的文件名，将对应的 xacro 文件的文件名设置为 `目标文件名.xacro`即可。
+
+# xacro 的生成过程解析
+
+在旧版 xacro 中， 首先会将所有的 `<xacro:include>` 标签加载并展开， 然后将会处理所有的属性和宏定义， 最后才会把展开宏调用以及计算相关表达式。这导致了一个结果，就是无法通过 xacro 条件控制标签控制属性和宏的定义，以及其他 xacro 文件的包含。
+
+而在 jade 版本的 ros 中， xacro 可以通过 --inorder 参数，提供了一种新的文档处理方式。这种处理方式将会安装 XML 文档流 的顺序处理 `xacro` 标签，并产生了以下的特性
+1. 宏调用和表达式的计算计算的时候将会使用最新的属性和宏而不是最后的属性和宏；
+2. 控制语句和 `xacro` 宏中的 `<xacro:include>` 标签，只会在宏被调用或者控制语句成立时才会被展开，并且可以将`<xacro:include>`  的文件名设置为一个变量
+3. 在全局文档中有一个全局作用域，而且没一个宏中也有自己的局部作用域，局部作用域中的变量设置不会影响全局作用域的变量。
+
+**在 jade 之后的版本中，不再需要添加 --inorder， 默认将使用新的处理方式。**
