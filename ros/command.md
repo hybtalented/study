@@ -1,3 +1,13 @@
+<!--
+ * @Author Youbiao He hybtalented@163.com
+ * @Date 2022-06-10
+ * @LastEditors Youbiao He
+ * @LastEditTime 2022-06-25
+ * @FilePath /ros/command.md
+ * @Description 
+ * 
+ * @Example 
+-->
 # rospack -- ros 包管理
 
 - **rospack find [packageName]** 查找相应包的位置
