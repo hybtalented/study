@@ -2,13 +2,13 @@
  * @Author Youbiao He hybtalented@163.com
  * @Date 2022-06-25
  * @LastEditors Youbiao He
- * @LastEditTime 2022-06-25
+ * @LastEditTime 2022-08-16
  * @FilePath /ros/tutorial/action.md
  * @Description 
  * 
  * @Example 
 -->
-ros2 中引进了一种新的节点间通信的方式， 动作（Action）， ros 动作的主要作用是提供一种需要长时间处理的任务的机制。它由三个部分组成： 目标（Goal），反馈（Feedback）和结果(Result)。
+ros2 中引进了一种新的节点间通信的方式， 动作（Action）， ros 动作的主要作用是提供一种需要长时间任务处理的机制。它由三个部分组成： 目标（Goal），反馈（Feedback）和结果(Result)。
 
 动作的机制是基于服务的调用和主题的发布和订阅。动作的使用与服务类似，不同的是动作是可以取消的。下图为一个动作的工作过程， 首先，动作客户端发送一个目标服务调用请求到服务端，完成目标服务后,客户端再次发送一个结果服务调用请求，并监听反馈主题，在动作调用过程中，服务端将反馈不断传给客户端，直到动作完成后，将调用的结果通过结果服务响应给客户端。
 ![动作的工作机制示意图](./image/Action-SingleActionClient.gif)
