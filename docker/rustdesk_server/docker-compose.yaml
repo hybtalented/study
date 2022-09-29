@@ -1,0 +1,27 @@
+version: '3'
+services:
+  hbbr: 
+    container_name: hbbr_server
+    image: S249:8081/rustdesk-server
+    volumes:
+      - ./root:/root/
+    command: hbbr
+    ports:
+      - 8086:21117 # 中继服务
+    networks:
+      - rustdesk_net
+  hbbs:
+    
+    container_name: hbbs_server
+    image: S249:8081/rustdesk-server
+    volumes:
+      - ./root:/root/
+    ports:
+      - 8085:21116 # ID注册与心跳服务
+      - 8085:21116/udp
+    command: hbbs -r hbbr_server
+    networks:
+      - rustdesk_net
+networks:
+  rustdesk_net:
+    driver: bridge

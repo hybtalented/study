@@ -1,0 +1,11 @@
+version: '3'
+services:
+  npm_registry:
+    container_name: verdaccio
+    image: S249:8081/verdaccio
+    volumes:
+      - ./verdaccio:/verdaccio
+      - ./verdaccio/storage:/verdaccio/storage/
+      - ./verdaccio/storage/data:/verdaccio/storage/data
+    ports:
+      - 8087:4873
