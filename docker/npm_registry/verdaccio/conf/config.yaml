@@ -58,7 +58,7 @@ auth:
     file: /verdaccio/storage/htpasswd
     # Maximum amount of users allowed to register, defaults to "+infinity".
     # You can set this to -1 to disable registration.
-    # max_users: 1000
+    max_users: 1000
     # Hash algorithm, possible options are: "bcrypt", "md5", "sha1", "crypt".
     # algorithm: bcrypt # by default is crypt, but is recommended use bcrypt for new installations
     # Rounds number for "bcrypt", will be ignored for other algorithms.
@@ -68,19 +68,23 @@ auth:
 # a list of other known repositories we can talk to
 uplinks:
   npmjs:
-    url: https://registry.npm.taobao.org/
+    url: https://registry.npmmirror.com/
 
 # Learn how to protect your packages
 # https://verdaccio.org/docs/protect-your-dependencies/
 # https://verdaccio.org/docs/configuration#packages
 packages:
+  '@oeb/*':
+   # scoped packages
+    access: $all
+    publish: $authenticated
+    unpublish: $authenticated
   '@*/*':
     # scoped packages
     access: $all
     publish: $authenticated
     unpublish: $authenticated
     proxy: npmjs
-
   '**':
     # allow all users (including non-authenticated users) to read and
     # publish all packages
@@ -112,8 +116,9 @@ server:
   # trustProxy: '127.0.0.1'
 
 # https://verdaccio.org/docs/configuration#offline-publish
-# publish:
-#   allow_offline: false
+publish:
+  ## This will allow the publisher to publish packages even if any uplink is down.
+  allow_offline: true
 
 # https://verdaccio.org/docs/configuration#url-prefix
 # url_prefix: /verdaccio/

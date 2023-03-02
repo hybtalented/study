@@ -9,3 +9,4 @@ services:
       - ./verdaccio/storage/data:/verdaccio/storage/data
     ports:
       - 8087:4873
+    
