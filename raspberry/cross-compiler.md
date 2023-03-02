@@ -54,28 +54,18 @@ rm *.tar.*
 
 3. 将树莓派系统上的编译环境同步到本地系统中
 
-在将树莓派系统环境同步到本地之前，我们先配置下诉环境变量
+在将树莓派系统环境同步到本地之前，我们先配置下述环境变量
 
 ```shell
-# /etc/profile.d/arm-env.sh
-# 树莓派工作目录
-export RASP_WORK_DIR=/home/hybtalented/rpi-tools
-# 树莓派系统库目录
-export  RASP_SYSROOT_DIR=${RASP_WORK_DIR}/raspberrypi/sysroot
+echo "配置树莓派交叉编译"
+export RASP_WORK_DIR=~/rpi-tools
+export RASP_SYSROOT_DIR=${RASP_WORK_DIR}/raspberrypi/sysroot
 
-# 树莓派交叉编译工具工具链目录
-export ARM_TOOL_DIR=${RASP_WORK_DIR}/tools
-# 树莓派交叉工具链版本号
-export ARM_COMPILER_VERSION=8.3-raspberrypi-4.19.97-v7l+
-
-# 树莓派交叉工具链架构
-export ARM_COMPILER_ARCH=arm-linux-gnueabihf
-# 当前使用的树莓派交叉工具链
-export ARM_COMPILER_PATH=${ARM_TOOL_DIR}/gcc-arm-${ARM_COMPILER_VERSION}-${ARM_COMPILER_ARCH}
-# 将树莓派交叉工具链的可执行目录添加到 PATH
-export PATH=$PATH:${ARM_COMPILER_PATH}/bin
+export ARM_SYSTEM_ARCH=aarch64
+export ARM_LIBRARY_ARCH=${ARM_SYSTEM_ARCH}-linux-gnu
+export ARM_COMPILER_PATH=/usr
 ```
-**可以将上述脚本放到`/etc/profile.d/`目录下，从而在开机时会自动加载对应的环境变量**
+**将上述脚本放到`/etc/profile.d/`目录下，在开机时将会自动设置对应的环境变量**
 
 其中，树莓派系统环境将被同步到`RASP_SYSROOT_DIR`所在的目录下，交叉编译器将被安装到`ARM_COMPILER_PATH`目录下。
 
@@ -88,11 +78,19 @@ rsync -avz --rsync-path="sudo rsync" --delete pi@$IP_ADDRESS:/usr/include $SYSRO
 rsync -avz --rsync-path="sudo rsync" --delete pi@$IP_ADDRESS:/usr/lib $SYSROOT_DIR/usr
 rsync -avz --rsync-path="sudo rsync" --delete pi@$IP_ADDRESS:/opt/vc $SYSROOT_DIR/opt
 ```
-**注意：上述命令可以执行任意次，从而在树莓派系统安装新的库之后，仍然可以与树莓派之间的文件同步。**
+**注意：如果树莓派系统更新或安装了软件包后，可以再次执行上述脚本，确保与树莓派之间保持文件同步。**
 
-在编译`glibc`时，如果在`$SYSROOT_DIR/usr/include/`下没有找到`asm`文件夹，编译过程中将会报错。实际上`asm`是存在于`$SYSROOT_DIR/usr/include/$ARM_COMPILER_ARCH`目录下，这时可以进入`$SYSROOT_DIR/usr/include/`目录，然后执行下述命令即可
+在编译`glibc`时，如果在`$SYSROOT_DIR/usr/include/`下没有找到`asm`文件夹，编译过程中将会报错。实际上`asm`是存在于`$SYSROOT_DIR/usr/include/$ARM_LIBRARY_ARCH`目录下，这时可以进入`$SYSROOT_DIR/usr/include/`目录，然后执行下述命令即可
 ```shell
-ln -s $ARM_COMPILER_ARCH/asm asm
+ln -s $ARM_LIBRARY_ARCH/asm asm
+```
+
+由于树莓派系统中可能存在一些文件软链接指向了原始文件系统的中的路径，我们需要将这些链接改为相对路径，并指向同步后的系统路径下。我们将使用 [sysroot-relatiivelinks.py](./scripts/sysroot-relatiivelinks.py) 来完成这个任务。
+
+```shell
+python3 sysroot-relatiivelinks.py $RASP_SYSROOT_DIR
+# 或者可以为 sysroot-relatiivelinks.py 添加可执行权限后, 通过如下方式达到同样目的
+#  ./sysroot-relatiivelinks.py $RASP_SYSROOT_DIR
 ```
 
 4. 编译并安装 Binutils
@@ -100,7 +98,7 @@ ln -s $ARM_COMPILER_ARCH/asm asm
 ```shell
 mkdir binutils-build && cd binutils-build
 mkdir -p  $ARM_COMPILER_PATH
-../binutils-2.31/configure --prefix=$ARM_COMPILER_PATH  --target=${ARM_COMPILER_ARCH} --with-arch=armv6 --with-fpu=vfp --with-float=hard
+../binutils-2.31/configure --prefix=$ARM_COMPILER_PATH  --target=${ARM_LIBRARY_ARCH} --with-arch=armv6 --with-fpu=vfp --with-float=hard
 make -j 8
 make install
 ```
@@ -109,14 +107,14 @@ make install
 首先先编译相应的交叉编译器二进制文件， 
 ```shell
 mkdir gcc-build && cd gcc-build
-../gcc-8.3.0/configure -v --with-pkgverion='$ARM_COMPILER_VERSION' --prefix=$ARM_COMPILER_PATH --target=$ARM_COMPILER_ARCH  --enable-languages=c,c++,fortran --with-arch=armv6 --with-fpu=vfp --with-float=hard --enable-multiarch --with-sysroot=$RASP_SYSROOT_DIR
+../gcc-8.3.0/configure -v --with-pkgverion='$ARM_COMPILER_VERSION' --prefix=$ARM_COMPILER_PATH --target=$ARM_LIBRARY_ARCH  --enable-languages=c,c++,fortran --with-arch=armv6 --with-fpu=vfp --with-float=hard --enable-multiarch --with-sysroot=$RASP_SYSROOT_DIR
 make -j8 all-gcc
 make install-gcc
 ```
 然后部分编译 glibc
 ```shell
 mkdir glibc-build && cd glibc-build
-../glibc-2.28/configure --prefix=$ARM_COMPILER_PATH/$ARM_COMPILER_ARCH arm-linux-gnueabihf --build=$MACHTYPE --host=$ARM_COMPILER_ARCH --target=$ARM_COMPILER_ARCH --with-arch=armv6 --with-fpu=vfp --with-float=hard --with-headers=$RASP_SYSROOT_DIR/usr/include --disable-multilib libc_cv_forced_unwind=yes --enable-multi-arch
+../glibc-2.28/configure --prefix=$ARM_COMPILER_PATH/$ARM_LIBRARY_ARCH arm-linux-gnueabihf --build=$MACHTYPE --host=$ARM_LIBRARY_ARCH --target=$ARM_LIBRARY_ARCH --with-arch=armv6 --with-fpu=vfp --with-float=hard --with-headers=$RASP_SYSROOT_DIR/usr/include --disable-multilib libc_cv_forced_unwind=yes --enable-multi-arch
 make install-bootstrap-headers=yes install-headers
 ```
 回到gcc的构建目录，执行下述命令进行gcc的第二阶段编译
@@ -168,44 +166,52 @@ arm-linux-gnueabihf-gcc hello_world.c
 在之前的小节，已经将树莓派系统中的编译环境同步到本地，并且编译并安装了交叉编译版本的 gcc， 在这个小节我们将要配置 CMake 交叉工具链。
 
 基于我们之前配置的环境变量 交叉工具链的CMake 配置如下
-```cmake
-# arm-cross-compile.cmake
 
+```cmake
 # 目标系统环境
-set(CMAKE_SYSTEM_NAME raspberrypi)
-set(CMAKE_SYSTEM_VERSION 4.19.97-v7l+)
+set(CMAKE_SYSTEM_NAME ubuntu)
+set(CMAKE_SYSTEM_VERSION 5.15.0-1015-raspi)
+
+message(STATUS "use toolchain for ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_VERSION}")
 # 交叉编译器架构
-set(CMAKE_LIBRARY_ARCHITECTURE $ENV{ARM_COMPILER_ARCH} CACHE STRING "交叉编译器架构")
+set(CMAKE_SYSTEM_PROCESSOR $ENV{ARM_SYSTEM_ARCH})
+set(CMAKE_LIBRARY_ARCHITECTURE $ENV{ARM_LIBRARY_ARCH})
 # 系统根目录
 set(ARM_SYSROOT_DIR $ENV{RASP_SYSROOT_DIR})
 # 交叉编译器设置
 set(CMAKE_CXX_COMPILER ${CMAKE_LIBRARY_ARCHITECTURE}-g++)
 set(CMAKE_C_COMPILER ${CMAKE_LIBRARY_ARCHITECTURE}-gcc)
 # 交叉编译器目标环境
-set(CMAKE_FIND_ROOT_PATH  $ENV{ARM_COMPILER_PATH}/${CMAKE_LIBRARY_ARCHITECTURE})
-# CMake 系统文件目录，用于 CMake 相关包的搜索路径，以及 gcc 头文件和库文件的默认搜索目录
+set(CMAKE_PREFIX_PATH $ENV{ROS2_INSTALL_PATH} ${ARM_SYSROOT_DIR} ${ARM_SYSROOT_DIR}/usr ${ARM_SYSROOT_DIR}/usr/local)
+# CMake 系统文件目录
 set(CMAKE_SYSROOT ${ARM_SYSROOT_DIR})
-# 在宿主机和目标环境内寻找应用程序
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)
 
-# 只在目标环境内寻找包含文件和库文件和第三方CMake包
+message(STATUS "SYSROOT ${CMAKE_SYSROOT}")
+message(STATUS "FIND_ROOT_PATH ${CMAKE_FIND_ROOT_PATH}")
+message(STATUS "SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR}")
+message(STATUS "LIBRARY_ARCHITECTURE ${CMAKE_LIBRARY_ARCHITECTURE}")
+
+
+set(PYTHON_SOABI cpython-36m-${CMAKE_LIBRARY_ARCHITECTURE})
+
+# 在宿主机内寻找应用程序
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+
+# 只在目标环境内寻找包含文件和库文件
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 ```
 
-在相应的 `CMakeLists.txt` 中添加下述语句
-```cmake
-include(arm-cross-compile.cmake)
-```
-
-或者执行 CMake 时添加
+在执行 cmake生存 Makefile 时，可以通过如下命令来指定交叉编译工具链
 
 ```shell
 cmake -DCMAKE_TOOLCHAIN_FILE=${CURRENT_FOLDER}/arm-cross-compile.cmake
 ```
 
-可以让 CMake 使用交叉工具链编译代码。
+来之 CMake 使用交叉工具链编译代码。
 
 # 参考文献
 1. Building GCC as a cross compiler for Raspberry Pi， https://solarianprogrammer.com/2018/05/06/building-gcc-cross-compiler-raspberry-pi/
